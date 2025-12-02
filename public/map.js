@@ -10,6 +10,7 @@ let pollInterval = 5000; // ms
 let playerMarker = null;
 let compassEnabled = false;
 let currentHeading = 0;
+let autoFollow = true; // Karte folgt Position bis der Nutzer die Karte bewegt
 let localLootSpots = [];
 let lootSpotsGenerated = false;
 const LOOT_COLLECTION_RADIUS = 25; // meters
@@ -168,15 +169,13 @@ function distanceBetween(pos1, pos2) {
 }
 
 function showMessage(html, duration = 2000) {
-  // Create a temporary toast notification at the bottom center
+  // Toast als fixes Overlay im Body (nicht mit Karte beweglich)
   const toast = document.createElement('div');
   toast.className = 'toast-message';
   toast.innerHTML = html;
   document.body.appendChild(toast);
-  
   // Fade in
   setTimeout(() => toast.classList.add('show'), 10);
-  
   // Remove after duration
   setTimeout(() => {
     toast.classList.remove('show');
@@ -251,6 +250,14 @@ function init() {
   const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   // initialize map with osm
   map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], 14);
+  // UI Pane für Statusleiste und Toasts innerhalb der Karte
+  const uiPane = map.createPane('uiPane');
+  uiPane.classList.add('ui-pane');
+  // über Popups/Marker (700), unter Controls (~1000)
+  uiPane.style.zIndex = '800';
+  uiPane.style.pointerEvents = 'none';
+  window.CG.uiPane = uiPane;
+  // Statusleiste NICHT in das UI-Pane verschieben; bleibt als fixed Overlay im Body
   spotsLayer = L.layerGroup().addTo(map);
   lootSpotsLayer = L.layerGroup().addTo(map);
   livePlayersLayer = L.layerGroup().addTo(map);
@@ -261,6 +268,8 @@ function init() {
   document.getElementById('btnLogin').addEventListener('click', onLogin);
   document.getElementById('btnLogout').addEventListener('click', onLogout);
   document.getElementById('btnCenter').addEventListener('click', centerToMe);
+    // Nutzerbewegung der Karte deaktiviert Auto-Follow
+    map.on('dragstart zoomstart movestart', () => { autoFollow = false; });
   document.getElementById('btnCompass').addEventListener('click', async (ev)=>{ compassEnabled = !compassEnabled; if (compassEnabled) enableCompass(); else disableCompass(); updateCompassButton(); });
   document.getElementById('wakelockBtn').addEventListener('click', async ()=>{ await toggleWakeLock(); });
   
@@ -554,6 +563,15 @@ function setPlayerPosition(position) {
   }
 }
 
+function centerToMe() {
+  // setzt Auto-Follow wieder aktiv und zentriert
+  autoFollow = true;
+  if (playerMarker) {
+    const ll = playerMarker.getLatLng();
+    map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 16));
+  }
+}
+
 async function enableCompass() {
   // For iOS 13+ we need DeviceOrientationEvent.requestPermission
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -813,8 +831,10 @@ async function getPositionAndLoad() {
       // Update player marker
       setPlayerPosition({ latitude: lat, longitude: lon });
       
-      // Update map view to follow player
-      map.setView([lat, lon], map.getZoom());
+      // Update map view to follow player only wenn autoFollow aktiv ist
+      if (autoFollow) {
+        map.setView([lat, lon], map.getZoom());
+      }
       
       // Record route point if tracking is enabled
       recordRoutePoint(lat, lon);

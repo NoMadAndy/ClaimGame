@@ -54,9 +54,7 @@
   </style>
 </head>
 <body>
-  <!-- topBar and left controls removed to avoid overlapping map controls -->
-  <div id="map"></div>
-  <div id="messageBox" class="message-box modern-panel" style="display:block">
+  <div id="messageBox" class="message-box modern-panel">
     <div id="msgStatus" class="msg-line">Not registered</div>
     <div id="msgStats" class="msg-line" style="font-weight:600;color:#4f8cff;display:none;">
       Level <span id="playerLevel">1</span> | XP: <span id="playerXP">0</span>/<span id="playerXPNext">100</span> | Loot: <span id="lootCount">0</span>
@@ -64,6 +62,7 @@
     <div id="msgWake" class="msg-line"></div>
     <div id="msgToken" class="msg-line"></div>
   </div>
+  <div id="map"></div>
   <div class="menu bottom-user-menu bottom-left-menu">
     <button id="userMenuBtn" class="menu-btn app-btn app-btn-ghost" title="User Menu" aria-label="User Menu">Guest ▾</button>
     <div id="userMenu" class="menu-dropdown" aria-hidden="true">
