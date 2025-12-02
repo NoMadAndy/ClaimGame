@@ -4,12 +4,15 @@ const baseUrl = window.location.origin;
 // ensure our developer helper object exists early so initSocket can set socket
 window.CG = window.CG || {};
 let currentPlayer = JSON.parse(localStorage.getItem('cg_player') || 'null');
-let map, spotsLayer, livePlayersLayer, heatLayer;
+let map, spotsLayer, lootSpotsLayer, livePlayersLayer, heatLayer;
 let heatEnabled = true; // Heatmap default an
 let pollInterval = 5000; // ms
 let playerMarker = null;
 let compassEnabled = false;
 let currentHeading = 0;
+let localLootSpots = [];
+let lootSpotsGenerated = false;
+const LOOT_COLLECTION_RADIUS = 25; // meters
 
 function init() {
   // --- base layers for selection ---
@@ -24,6 +27,7 @@ function init() {
   // initialize map with osm
   map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], 14);
   spotsLayer = L.layerGroup().addTo(map);
+  lootSpotsLayer = L.layerGroup().addTo(map);
   livePlayersLayer = L.layerGroup().addTo(map);
   heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17 });
 
@@ -121,6 +125,121 @@ function init() {
   // Adjust compass button initial look
   updateCompassButton();
 
+  // --- Local Loot Spots (Phase 1) ---
+  function generateLocalLootSpotsAround(center) {
+    const spots = [];
+    const count = 5 + Math.floor(Math.random() * 6); // 5-10 spots
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * 2 * Math.PI;
+      const radius = 50 + Math.random() * 100; // 50-150m
+      const pos = moveCoordinate(center, angle, radius);
+      const xp = 10;
+      const itemReward = Math.random() > 0.7 ? { name: ['Kompass', 'Karte', 'Boost'][Math.floor(Math.random()*3)], quantity: 1 } : null;
+      spots.push({
+        id: 'loot-' + Date.now() + '-' + i,
+        position: pos,
+        xpReward: xp,
+        itemReward: itemReward,
+        isCollected: false,
+        createdAt: Date.now()
+      });
+    }
+    return spots;
+  }
+
+  function moveCoordinate(center, angleRad, distanceMeters) {
+    const R = 6371000; // earth radius in meters
+    const lat1 = center.lat * Math.PI / 180;
+    const lon1 = center.lng * Math.PI / 180;
+    const dR = distanceMeters / R;
+    const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dR) + Math.cos(lat1)*Math.sin(dR)*Math.cos(angleRad));
+    const lon2 = lon1 + Math.atan2(Math.sin(angleRad)*Math.sin(dR)*Math.cos(lat1), Math.cos(dR)-Math.sin(lat1)*Math.sin(lat2));
+    return { lat: lat2 * 180 / Math.PI, lng: lon2 * 180 / Math.PI };
+  }
+
+  function displayLootSpots() {
+    lootSpotsLayer.clearLayers();
+    localLootSpots.forEach(loot => {
+      if (loot.isCollected) return;
+      const marker = L.marker([loot.position.lat, loot.position.lng], {
+        icon: L.divIcon({
+          className: 'loot-spot-icon',
+          html: '<svg viewBox="0 0 24 24" width="32" height="32"><polygon points="12,2 15,9 22,10 17,15 18,22 12,18 6,22 7,15 2,10 9,9" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/></svg>',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        })
+      });
+      marker.bindPopup(`<b>Loot Spot</b><br>XP: ${loot.xpReward}${loot.itemReward ? '<br>Item: '+loot.itemReward.name : ''}`);
+      lootSpotsLayer.addLayer(marker);
+    });
+  }
+
+  function tryCollectNearbyLootSpots(currentPos) {
+    if (!currentPos) return;
+    localLootSpots.forEach(loot => {
+      if (loot.isCollected) return;
+      const dist = distanceBetween(currentPos, loot.position);
+      if (dist <= LOOT_COLLECTION_RADIUS) {
+        collectLootSpot(loot, dist);
+      }
+    });
+  }
+
+  function collectLootSpot(loot, dist) {
+    loot.isCollected = true;
+    loot.collectedAt = Date.now();
+    const gainedXP = loot.xpReward;
+    
+    if (currentPlayer) {
+      // Update local player stats
+      if (!currentPlayer.stats) currentPlayer.stats = { totalXP: 0, collectedLootSpotsCount: 0, level: 1, xpToNextLevel: 100 };
+      currentPlayer.stats.totalXP += gainedXP;
+      currentPlayer.stats.collectedLootSpotsCount = (currentPlayer.stats.collectedLootSpotsCount || 0) + 1;
+      // Recalc level
+      const level = 1 + Math.floor(currentPlayer.stats.totalXP / 100);
+      const nextThreshold = level * 100;
+      currentPlayer.stats.level = level;
+      currentPlayer.stats.xpToNextLevel = Math.max(0, nextThreshold - currentPlayer.stats.totalXP);
+      
+      if (loot.itemReward) {
+        if (!currentPlayer.inventory) currentPlayer.inventory = { items: {} };
+        const itemId = loot.itemReward.name;
+        if (!currentPlayer.inventory.items[itemId]) {
+          currentPlayer.inventory.items[itemId] = { name: loot.itemReward.name, quantity: 0 };
+        }
+        currentPlayer.inventory.items[itemId].quantity += loot.itemReward.quantity;
+      }
+      
+      localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
+      updateUserMenuUI();
+    }
+    
+    displayLootSpots();
+    showMessage(`🎉 Loot gesammelt! +${gainedXP} XP${loot.itemReward ? ' + '+loot.itemReward.name : ''}<br>Entfernung: ${dist.toFixed(1)}m`, 3000);
+  }
+
+  function distanceBetween(pos1, pos2) {
+    const R = 6371000;
+    const lat1 = pos1.lat * Math.PI / 180;
+    const lat2 = pos2.lat * Math.PI / 180;
+    const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+    const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+    const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  function showMessage(html, duration = 2000) {
+    const box = document.getElementById('messageBox');
+    if (box) {
+      const line = document.createElement('div');
+      line.className = 'msg-line';
+      line.innerHTML = html;
+      box.appendChild(line);
+      setTimeout(() => line.remove(), duration);
+    }
+  }
+
   if (currentPlayer) updateStatus();
   updateUserMenuUI();
   // Create player marker initially at map center (so it is always visible)
@@ -197,7 +316,8 @@ function updateUserMenuUI() {
       const x = userStats.querySelector('.us-xp');
       if (n) n.innerText = currentPlayer.displayName || 'User';
       if (r) r.innerText = `Role: ${currentPlayer.role || 'PLAYER'}`;
-      if (x) x.innerText = `XP: ${currentPlayer.stats ? currentPlayer.stats.totalXP : 0}  • Level: ${currentPlayer.stats ? currentPlayer.stats.level : 1}`;
+      const lootCount = currentPlayer.stats && currentPlayer.stats.collectedLootSpotsCount ? ` • Loot: ${currentPlayer.stats.collectedLootSpotsCount}` : '';
+      if (x) x.innerText = `XP: ${currentPlayer.stats ? currentPlayer.stats.totalXP : 0}  • Level: ${currentPlayer.stats ? currentPlayer.stats.level : 1}${lootCount}`;
     }
   } else {
     if (regBtn) regBtn.style.display = 'block';
@@ -481,10 +601,21 @@ async function getPositionAndLoad() {
     return;
   }
   navigator.geolocation.getCurrentPosition((pos)=>{
+    const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     map.setView([pos.coords.latitude, pos.coords.longitude], 16);
     loadSpots(pos.coords.latitude, pos.coords.longitude);
     // update player marker to current GPS position immediately
     setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+    
+    // Generate loot spots on first GPS fix
+    if (!lootSpotsGenerated) {
+      localLootSpots = generateLocalLootSpotsAround(currentPos);
+      lootSpotsGenerated = true;
+      displayLootSpots();
+    }
+    
+    // Try to collect nearby loot
+    tryCollectNearbyLootSpots(currentPos);
   }, (err)=>{ console.warn('geo err', err); loadSpots(); });
 }
 
@@ -581,10 +712,12 @@ async function loadLivePlayers(lat = null, lon = null, radius = 2000) {
 async function centerToMe() {
   if (!navigator.geolocation) return alert('Geolocation not available');
   navigator.geolocation.getCurrentPosition((pos)=>{ 
+    const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     map.setView([pos.coords.latitude, pos.coords.longitude], 16); 
     loadSpots(pos.coords.latitude, pos.coords.longitude); 
     setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     loadLivePlayers(pos.coords.latitude, pos.coords.longitude);
+    tryCollectNearbyLootSpots(currentPos);
     if (window.CG && window.CG.socket && currentPlayer) { window.CG.socket.emit('positionUpdate', { playerId: currentPlayer.id, position: { latitude: pos.coords.latitude, longitude: pos.coords.longitude } }); }
   });
 }
