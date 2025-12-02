@@ -265,6 +265,42 @@ app.post('/players/:id/position', (req, res) => {
   res.json({ ok: true });
 });
 
+// Loot collection endpoint
+app.post('/players/:id/loot', (req, res) => {
+  const p = store.players[req.params.id];
+  if (!p) return res.status(404).json({ error: 'Player not found' });
+  
+  const { lootSpotId, xpReward, itemReward, distance } = req.body || {};
+  if (!lootSpotId || !xpReward) return res.status(400).json({ error: 'lootSpotId and xpReward required' });
+  
+  ensurePlayerStats(p);
+  if (!p.inventory) p.inventory = { items: {} };
+  
+  // Add XP
+  addXpToPlayer(p, xpReward);
+  
+  // Add item if present
+  if (itemReward && itemReward.name) {
+    const itemId = itemReward.name;
+    if (!p.inventory.items[itemId]) {
+      p.inventory.items[itemId] = { name: itemReward.name, quantity: 0, description: itemReward.description || '' };
+    }
+    p.inventory.items[itemId].quantity += (itemReward.quantity || 1);
+  }
+  
+  // Track collected loot count
+  p.stats.collectedLootSpotsCount = (p.stats.collectedLootSpotsCount || 0) + 1;
+  
+  saveStore();
+  res.json({ 
+    ok: true, 
+    player: p,
+    xpGained: xpReward,
+    itemGained: itemReward,
+    distance: distance
+  });
+});
+
 // Spots
 app.get('/spots', (req, res) => {
   // optional radius & center

@@ -84,8 +84,42 @@ function collectLootSpot(loot, dist) {
   loot.collectedAt = Date.now();
   const gainedXP = loot.xpReward;
   
+  if (currentPlayer && currentPlayer.id && currentPlayer.mode === 'LOGGED_IN') {
+    // Sync with backend for logged-in players
+    const payload = {
+      lootSpotId: loot.id,
+      xpReward: gainedXP,
+      itemReward: loot.itemReward,
+      distance: dist
+    };
+    fetch(`${baseUrl}/players/${currentPlayer.id}/loot`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.player) {
+        currentPlayer = data.player;
+        localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
+        updateUserMenuUI();
+      }
+      displayLootSpots();
+      showMessage(`🎉 Loot gesammelt! +${gainedXP} XP${loot.itemReward ? ' + '+loot.itemReward.name : ''}`, 3000);
+    })
+    .catch(e => {
+      console.warn('Backend loot sync failed, using local fallback', e);
+      // Fallback to local update
+      updateLocalLootStats(loot, gainedXP);
+    });
+  } else {
+    // Local-only for guests or offline
+    updateLocalLootStats(loot, gainedXP);
+  }
+}
+
+function updateLocalLootStats(loot, gainedXP) {
   if (currentPlayer) {
-    // Update local player stats
     if (!currentPlayer.stats) currentPlayer.stats = { totalXP: 0, collectedLootSpotsCount: 0, level: 1, xpToNextLevel: 100 };
     currentPlayer.stats.totalXP += gainedXP;
     currentPlayer.stats.collectedLootSpotsCount = (currentPlayer.stats.collectedLootSpotsCount || 0) + 1;
