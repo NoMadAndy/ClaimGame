@@ -1,0 +1,243 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ClaimGame - Dev UI</title>
+  <style>
+    body{font-family: Arial, sans-serif; padding: 1rem;}
+    button{margin: .25rem}
+    #spots{margin-top: 1rem}
+    .spot{border: 1px solid #ddd;padding: .5rem;margin: .25rem 0}
+    /* Mobile Panel Anpassungen */
+    @media (max-width: 600px) {
+      .dev-panel, #spots, #playerInfo {
+        width: 95vw !important;
+        min-width: unset !important;
+        max-width: 98vw !important;
+        left: 2vw !important;
+        right: 2vw !important;
+        box-sizing: border-box;
+        font-size: 1.08em;
+      }
+      .dev-panel {
+        padding: 4vw 3vw;
+        border-radius: 4vw;
+      }
+      .dev-panel button, button {
+        font-size: 1.1em;
+        padding: 0.9em 1.2em;
+        margin: 0.4em 0.2em;
+        border-radius: 1.2em;
+        min-width: 44vw;
+        max-width: 100vw;
+        box-sizing: border-box;
+      }
+      .dev-panel label {
+        font-size: 1em;
+        margin-top: 0.5em;
+        display: block;
+      }
+      #authStatus {
+        font-size: 1em;
+        word-break: break-word;
+      }
+      body {
+        padding: 0.5em !important;
+        font-size: 1.08em;
+      }
+      .spot {
+        font-size: 1em;
+        padding: 0.7em 0.5em;
+      }
+      /* Panels bei Überlauf scrollbar machen */
+      .dev-panel, #spots, #playerInfo {
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>ClaimGame - Dev UI</h1>
+  <div class="modern-panel dev-panel">
+    <button id="btnHealth" class="app-btn" title="Health" aria-label="Health">
+      <svg viewBox="0 0 24 24"><path d="M12 21s-6-4.35-9-7.5A6.01 6.01 0 0 1 12 3a6.01 6.01 0 0 1 9 10.5C18 16.65 12 21 12 21z" fill="#fff"/></svg>
+    </button>
+    <button id="btnListSpots" class="app-btn app-btn-ghost" title="Spots" aria-label="Spots">
+      <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20" stroke="#111" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span id="authStatus" style="margin-left:8px"></span>
+  </div>
+  <div id="bottomControlsDev" style="position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;display:flex;gap:8px;align-items:center;">
+    <div class="menu">
+      <button id="userMenuBtn" class="menu-btn" title="User Menu" aria-label="User Menu">Guest ▾</button>
+      <div id="userMenu" class="menu-dropdown" aria-hidden="true" style="display:none;position:absolute;">
+        <div id="userStats" class="user-stats" style="display:none">
+          <div class="us-name"></div>
+          <div class="us-role"></div>
+          <div class="us-xp"></div>
+        </div>
+        <button id="btnRegister" class="app-btn app-btn-ghost" title="Register New Player" aria-label="Register New Player">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 12a5 5 0 100-10 5 5 0 000 10z" fill="#111"/><path d="M12 14c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6z" fill="#111"/><path d="M20 8v2h-2v2h-2V10h2V8h2z" fill="#111"/></svg>
+        </button>
+        <button id="btnLogin" class="app-btn app-btn-ghost" title="Login" aria-label="Login">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 17l5-5-5-5v10z" fill="#111"/><path d="M4 21h14v-2H4V5h2V3H4a2 2 0 00-2 2v14a2 2 0 002 2z" fill="#111"/></svg>
+        </button>
+        <button id="btnLogout" class="app-btn app-btn-ghost" title="Logout" aria-label="Logout">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" fill="#111"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playerInfo" class="modern-panel"></div>
+  <div id="spots" class="modern-panel"></div>
+  <p style="margin-top:12px">Or open the full map: <a href="/map.html">Map View</a></p>
+
+  <script>
+        function tryAutoRefresh() {
+          const token = localStorage.getItem('cg_token');
+          const refresh = localStorage.getItem('cg_refresh');
+          if (!token || !refresh) return;
+          setInterval(async ()=>{
+            try {
+              const body = await fetch('/auth/refresh', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ refreshToken: refresh }) }).then(r=>r.json());
+              if (!body || !body.token) return;
+              localStorage.setItem('cg_token', body.token);
+              if (body.refreshToken) localStorage.setItem('cg_refresh', body.refreshToken);
+              document.getElementById('authStatus').innerText = `Token refresh: ${new Date().toISOString()}`;
+            } catch (e) { console.warn('refresh fail', e); }
+          }, 20*1000);
+        }
+    // restore token timeline info
+    const token = localStorage.getItem('cg_token');
+    if (token) {
+      const info = document.getElementById('authStatus');
+      try { const payload = JSON.parse(atob(token.split('.')[1])); info.innerText = `JWT expiry: ${new Date(payload.exp*1000).toISOString()}`; } catch(e){ info.innerText = 'JWT present'; }
+      if (localStorage.getItem('cg_refresh')) tryAutoRefresh();
+    }
+    // set user menu label if logged in
+    try {
+      const p = JSON.parse(localStorage.getItem('cg_player'));
+      if (p && p.displayName) {
+        const ub = document.getElementById('userMenuBtn'); if (ub) { ub.setAttribute('title', p.displayName); ub.setAttribute('aria-label', p.displayName); }
+      }
+    } catch(e) {}
+    let currentPlayer = null;
+    async function doFetch(url, opts) {
+      const r = await fetch(url, opts);
+      return r.json();
+    }
+
+    document.getElementById('btnHealth').addEventListener('click', async ()=>{
+      const res = await doFetch('/health');
+      alert(JSON.stringify(res));
+    });
+
+    document.getElementById('btnRegister').addEventListener('click', async ()=>{
+      const name = prompt('Display name?') || 'DevPlayer';
+      const res = await doFetch('/players/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ displayName: name, role: 'PLAYER' }) });
+      currentPlayer = res.player;
+      document.getElementById('playerInfo').innerText = `Player: ${currentPlayer.displayName} (id=${currentPlayer.id})`;
+      if (typeof updateUserMenuUIIndex === 'function') updateUserMenuUIIndex();
+      const ub = document.getElementById('userMenuBtn'); if (ub) { ub.setAttribute('title', currentPlayer.displayName); ub.setAttribute('aria-label', currentPlayer.displayName); }
+    });
+    document.getElementById('btnLogin').addEventListener('click', async ()=>{
+      const id = prompt('Player ID for login (if you registered with password):');
+      const password = prompt('Password');
+      if (!id || !password) return alert('ID & password required');
+      const response = await doFetch('/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id, password }) });
+      if (response.error) return alert('Login failed: ' + JSON.stringify(response));
+      localStorage.setItem('cg_token', response.token);
+      if (response.refreshToken) localStorage.setItem('cg_refresh', response.refreshToken);
+      localStorage.setItem('cg_player', JSON.stringify(response.player));
+      currentPlayer = response.player;
+      document.getElementById('playerInfo').innerText = `Player: ${currentPlayer.displayName} (id=${currentPlayer.id})`;
+      if (typeof updateUserMenuUIIndex === 'function') updateUserMenuUIIndex();
+      document.getElementById('authStatus').innerText = 'Logged in (JWT)';
+      const ub = document.getElementById('userMenuBtn'); if (ub) { ub.setAttribute('title', currentPlayer.displayName); ub.setAttribute('aria-label', currentPlayer.displayName); }
+      // schedule refresh
+      tryAutoRefresh();
+    });
+    document.getElementById('btnLogout').addEventListener('click', ()=>{
+      localStorage.removeItem('cg_token');
+      localStorage.removeItem('cg_player');
+      currentPlayer = null;
+      document.getElementById('playerInfo').innerText = '';
+      document.getElementById('authStatus').innerText = 'Logged out';
+      if (typeof updateUserMenuUIIndex === 'function') updateUserMenuUIIndex();
+      const ub = document.getElementById('userMenuBtn'); if (ub) { ub.setAttribute('title', 'Guest'); ub.setAttribute('aria-label', 'Guest'); }
+    });
+
+    // user menu toggle
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userMenu = document.getElementById('userMenu');
+    if (userMenuBtn && userMenu) {
+      userMenuBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); const show = userMenu.classList.contains('show'); if (show) { userMenu.classList.remove('show'); userMenu.style.display='none'; } else { userMenu.classList.add('show'); userMenu.style.display='block'; } });
+      document.addEventListener('click', ()=>{ userMenu.classList.remove('show'); userMenu.style.display='none'; });
+      // init: show/hide register/login vs user stats
+      function updateUserMenuUIIndex() {
+        const regBtn = document.getElementById('btnRegister');
+        const loginBtn = document.getElementById('btnLogin');
+        const logoutBtn = document.getElementById('btnLogout');
+        const userStats = document.getElementById('userStats');
+        if (currentPlayer) {
+          if (regBtn) regBtn.style.display='none';
+          if (loginBtn) loginBtn.style.display='none';
+          if (logoutBtn) logoutBtn.style.display='block';
+          if (userStats) {
+            userStats.style.display = 'block';
+            const n = userStats.querySelector('.us-name');
+            const r = userStats.querySelector('.us-role');
+            const x = userStats.querySelector('.us-xp');
+            if (n) n.innerText = currentPlayer.displayName || 'User';
+            if (r) r.innerText = `Role: ${currentPlayer.role || 'PLAYER'}`;
+            if (x) x.innerText = `XP: ${currentPlayer.stats ? currentPlayer.stats.totalXP : 0} • Level: ${currentPlayer.stats ? currentPlayer.stats.level : 1}`;
+          }
+        } else {
+          if (regBtn) regBtn.style.display='block';
+          if (loginBtn) loginBtn.style.display='block';
+          if (logoutBtn) logoutBtn.style.display='block';
+          if (userStats) userStats.style.display='none';
+        }
+      }
+      updateUserMenuUIIndex();
+      // Also update when page loads to reflect existing localStorage state
+      document.addEventListener('DOMContentLoaded', updateUserMenuUIIndex);
+    }
+
+    document.getElementById('btnListSpots').addEventListener('click', async ()=>{
+      const spots = await doFetch('/spots');
+      const el = document.getElementById('spots');
+      el.innerHTML = '';
+      for (const s of spots) {
+        const div = document.createElement('div');
+        div.className = 'spot';
+        div.innerHTML = `<b>${s.name}</b> (${s.id}) <br/> ${s.description || ''} <br/> 
+          <button data-id='${s.id}' class='btnlog app-btn app-btn-ghost' title='Manual Log' aria-label='Manual Log'>
+            <svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><path d='M12 12v8M6 16h12M8 7h8' stroke='#111' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/></svg>
+          </button>
+          <button data-id='${s.id}' class='btnautolog app-btn app-btn-ghost' title='Auto Log' aria-label='Auto Log'>
+            <svg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'><path d='M12 2v7l4-4M6 9a6 6 0 1 0 12 0' stroke='#111' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>
+          </button>`;
+        el.appendChild(div);
+      }
+      document.querySelectorAll('.btnlog').forEach(btn=>btn.addEventListener('click', async (ev)=>{
+        if (!currentPlayer) return alert('Register first');
+        const id = ev.target.getAttribute('data-id');
+        const distance = parseFloat(prompt('Approx distance in meters?', '10'));
+        const note = prompt('Log note?');
+        const r = await doFetch(`/spots/${id}/logs`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ playerId: currentPlayer.id, distance, note }) });
+        alert('Logged: ' + JSON.stringify(r));
+      }));
+      document.querySelectorAll('.btnautolog').forEach(btn=>btn.addEventListener('click', async (ev)=>{
+        if (!currentPlayer) return alert('Register first');
+        const id = ev.target.getAttribute('data-id');
+        const distance = parseFloat(prompt('Approx distance in meters?', '5'));
+        const r = await doFetch(`/spots/${id}/auto-log`, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ playerId: currentPlayer.id, distance }) });
+        alert('AutoLogged: ' + JSON.stringify(r));
+      }));
+    });
+  </script>
+</body>
+</html>
