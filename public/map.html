@@ -54,17 +54,7 @@
   </style>
 </head>
 <body>
-  <div id="topBar" class="top-bar">
-    <div id="controls" class="modern-panel top-panel">
-        <div style="display:flex;align-items:center;gap:0.5em;flex-wrap:wrap;justify-content:center;">
-          <!-- status moved to message box -->
-          <div id="status" style="display:none">Not registered</div>
-        </div>
-        <!-- wakelock and token info moved to messageBox -->
-        <div style="margin-top:6px">Polling: <span id="pollingInterval">5s</span></div>
-      </div>
-    <!-- messageBox moved out of topBar; will be centered overlay -->
-  </div>
+  <!-- topBar and left controls removed to avoid overlapping map controls -->
   <div id="map"></div>
   <div id="messageBox" class="message-box modern-panel" style="display:block">
     <div id="msgStatus" class="msg-line">Not registered</div>
