@@ -27,23 +27,22 @@
 }
 .menu { position: relative; display:inline-block; }
 .menu .menu-btn{ background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-2) 100%); color:#fff; border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight:700; box-shadow:0 2px 8px rgba(79,140,255,0.08) }
-.menu .menu-dropdown{ display:none; position:absolute; right:0; top:40px; background: var(--color-bg); padding:8px; border-radius:12px; box-shadow: var(--shadow-soft); min-width:180px; z-index:5000; color: var(--color-text) }
-.menu .menu-dropdown.show { display:block }
-.menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:transparent; border-radius:8px; border:1px solid #e9f5ff; padding:8px; font-size:0.95em; cursor:pointer }
-.menu .menu-dropdown button:hover{ background:linear-gradient(90deg,var(--color-primary),var(--color-primary-2)); color:#fff }
+.menu .menu-dropdown{ display:none; position:absolute; left:0; top:40px; background: rgba(0,0,0,0.95); padding:8px; border-radius:12px; box-shadow: var(--shadow-soft); min-width:180px; z-index:5000; color: #fff }
+.menu .menu-dropdown.show { display:block !important; }
+.menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:rgba(255,255,255,0.1); border-radius:8px; border:1px solid rgba(255,255,255,0.3); padding:8px; font-size:0.95em; cursor:pointer; color:#fff; font-weight:600; }
+.menu .menu-dropdown button:hover{ background:linear-gradient(90deg,var(--color-primary),var(--color-primary-2)); color:#fff; border-color:var(--color-primary); }
 /* bottom menu (in bottomControls) should show dropdown upwards */
-.bottom-user-menu .menu-dropdown{ top:auto; bottom:46px; right:0; }
-.bottom-user-menu:hover .menu-dropdown{ display:block; }
-.bottom-user-menu { position: relative; }
-.bottom-user-menu .menu-btn { display:inline-flex; align-items:center; gap:8px; }
+.bottom-user-menu .menu-dropdown{ top:auto; bottom:46px; left:0; }
+.bottom-user-menu { position: fixed; bottom:20px; left:20px; z-index:9999; }
+.bottom-user-menu .menu-btn { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.85); color:#fff; min-width:140px; min-height:140px; font-size:1.8em; border-radius:999px; }
 .bottom-user-menu .menu-btn .btn-label { font-weight: 600; }
-.user-stats { padding: 10px 8px; border-radius: 10px; background: linear-gradient(90deg,#f7f9ff,#eef6ff); margin-bottom: 8px; text-align: left; }
-.user-stats .us-name { font-weight:700; font-size: 1.05em; margin-bottom: 4px }
-.user-stats .us-role { font-size: 0.95em; color: #333; margin-bottom: 4px }
-.user-stats .us-xp { font-size: 0.95em; color: #555 }
+.user-stats { padding: 10px 8px; border-radius: 10px; background: linear-gradient(90deg,rgba(30,30,30,0.95),rgba(50,50,50,0.95)); margin-bottom: 8px; text-align: left; color:#fff; }
+.user-stats .us-name { font-weight:700; font-size: 1.05em; margin-bottom: 4px; color:#fff; }
+.user-stats .us-role { font-size: 0.95em; color: #ccc; margin-bottom: 4px }
+.user-stats .us-xp { font-size: 0.95em; color: #aaa }
 .top-panel .menu .menu-dropdown.show { display:block }
-.top-panel .menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:transparent; border-radius:8px; border:1px solid #e9f5ff; padding:8px; font-size:0.95em; cursor:pointer }
-.top-panel .menu .menu-dropdown button:hover{ background:linear-gradient(90deg,#4f8cff,#38c6ff); color:#fff }
+.top-panel .menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:rgba(255,255,255,0.1); border-radius:8px; border:1px solid rgba(255,255,255,0.3); padding:8px; font-size:0.95em; cursor:pointer; color:#fff; font-weight:600; }
+.top-panel .menu .menu-dropdown button:hover{ background:linear-gradient(90deg,#4f8cff,#38c6ff); color:#fff; border-color:#4f8cff; }
 
 /* Bottom controls (Center, Kompass, Display, Layers) */
 .bottom-controls { position: fixed; left:50%; transform: translateX(-50%); bottom: 18px; z-index: 9999; display:flex; gap:20px; align-items:center; justify-content:center; }
@@ -62,6 +61,22 @@
 	.bottom-controls .big-btn { padding: 28px 44px; font-size: 2.16em; min-width:160px; min-height:160px; }
 	.big-btn svg { width: 110px; height: 110px; }
 	.top-panel .menu .menu-btn{ padding: 8px 12px; font-size: 1.02em }
+	
+	/* Mobile: Größere Buttons im Menü */
+	.menu .menu-dropdown { min-width: 200px; padding: 12px; }
+	.menu .menu-dropdown button { 
+		font-size: 1.2em; 
+		padding: 12px; 
+		margin: 8px 0;
+		min-height: 50px;
+	}
+	.bottom-user-menu .menu-btn { 
+		font-size: 1.1em; 
+		padding: 10px 14px;
+	}
+	.bottom-user-menu .menu-dropdown { 
+		bottom: 60px; 
+	}
 }
 .modern-panel h1, .modern-panel h2, #controls h1, .dev-panel h1 {
 	font-size: 1.4em;
@@ -205,13 +220,20 @@
 .app-btn svg { width: calc(22px * var(--ui-scale)); height: calc(22px * var(--ui-scale)); }
 .app-btn.app-btn-ghost { background: linear-gradient(90deg,#fff,#f0f8ff); color: var(--color-text); border: 1px solid #cce6ff }
 
-/* Central message box for unified messages */
-.message-box { position: fixed; left: 50%; top: calc(10vh); transform: translateX(-50%); min-width: 320px; max-width: 65vw; z-index: 10005; padding: calc(12px * var(--ui-scale)) calc(18px * var(--ui-scale)); border-radius: calc(14px * var(--ui-scale)); box-shadow: 0 18px 50px rgba(0,0,0,0.18); background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.6); backdrop-filter: blur(6px) saturate(120%); text-align:center; }
-.message-box .msg-line { font-size: calc(1.05em * var(--ui-scale)); color: #222; margin: 6px 0; }
+/* Central message box as top status bar */
+.message-box { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); min-width: 280px; max-width: 50vw; z-index: 999; padding: 8px 16px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(8px); text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.message-box .msg-line { font-size: 0.95em; color: #fff; margin: 0; line-height: 1.4; font-weight: 500; }
+.message-box .msg-line:empty { display: none; }
 
-/* When screen smaller, push message box up a bit and full width */
+/* Toast notifications for temporary messages */
+.toast-message { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 10000; padding: 12px 24px; border-radius: 24px; background: rgba(0,0,0,0.9); color: #fff; font-size: 1.1em; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; text-align: center; max-width: 80vw; }
+.toast-message.show { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+
+/* When screen smaller, make status bar wider */
 @media (max-width: 600px) {
-	.message-box { top: calc(6vh); left: 50%; transform: translateX(-50%); min-width: 86vw; max-width: 94vw; padding: calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale)); }
+	.message-box { top: 10px; min-width: 70vw; max-width: 85vw; padding: 10px 14px; font-size: 1.1em; }
+	.message-box .msg-line { font-size: 1em; }
+	.toast-message { bottom: 200px; font-size: 1.3em; padding: 14px 28px; }
 }
 
 /* Top bar to arrange top panels in one line */

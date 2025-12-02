@@ -21,7 +21,6 @@ let autoLogCooldowns = {}; // { spotId: timestamp }
 let trackingEnabled = false;
 let activeRouteId = null;
 let routePoints = [];
-let routeVisible = true;
 
 // --- Local Loot Spots (Phase 1) - Global functions ---
 function generateLocalLootSpotsAround(center) {
@@ -169,14 +168,20 @@ function distanceBetween(pos1, pos2) {
 }
 
 function showMessage(html, duration = 2000) {
-  const box = document.getElementById('messageBox');
-  if (box) {
-    const line = document.createElement('div');
-    line.className = 'msg-line';
-    line.innerHTML = html;
-    box.appendChild(line);
-    setTimeout(() => line.remove(), duration);
-  }
+  // Create a temporary toast notification at the bottom center
+  const toast = document.createElement('div');
+  toast.className = 'toast-message';
+  toast.innerHTML = html;
+  document.body.appendChild(toast);
+  
+  // Fade in
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  // Remove after duration
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 function tryAutoLogNearbySpots(currentPos) {
@@ -269,17 +274,10 @@ function init() {
     });
   }
   
-  const btnRouteToggle = document.getElementById('btnRouteToggle');
-  if (btnRouteToggle) {
-    btnRouteToggle.addEventListener('click', () => {
-      toggleRouteVisibility();
-    });
-  }
-  
   // layers button toggles the builtin control open/close if possible
   // The layer control is shown in the top-right by default; no bottom toggle needed.
 
-  // user menu: opens on hover via CSS, no JS click handler needed
+  // user menu: click handler for mobile
   const userMenuBtn = document.getElementById('userMenuBtn');
   const userMenu = document.getElementById('userMenu');
   if (userMenuBtn && userMenu) {
@@ -288,7 +286,30 @@ function init() {
       userMenuBtn.setAttribute('title', currentPlayer ? `${currentPlayer.displayName || 'User'}` : 'Guest');
       userMenuBtn.setAttribute('aria-label', currentPlayer ? `${currentPlayer.displayName || 'User'}` : 'Guest');
     }
-    // Hover is handled by CSS
+    
+    // Click handler for mobile (and desktop)
+    userMenuBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const isVisible = userMenu.classList.contains('show');
+      if (isVisible) {
+        userMenu.classList.remove('show');
+        userMenu.setAttribute('aria-hidden', 'true');
+        userMenu.style.display = 'none';
+      } else {
+        userMenu.classList.add('show');
+        userMenu.setAttribute('aria-hidden', 'false');
+        userMenu.style.display = 'block';
+      }
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (ev) => {
+      if (!userMenuBtn.contains(ev.target) && !userMenu.contains(ev.target)) {
+        userMenu.classList.remove('show');
+        userMenu.setAttribute('aria-hidden', 'true');
+        userMenu.style.display = 'none';
+      }
+    });
   }
   // no custom layers toggle button anymore; use Leaflet's native control
 
@@ -398,7 +419,7 @@ function init() {
 
   // add baseLayers + overlays to control
   const baseLayers = { 'OpenStreetMap': osm, 'Topo': topo, 'Stamen Toner': stamenToner, 'Stamen Watercolor': stamenWater, 'Esri Satellite': esriSat, 'Carto Positron': cartoPositron, 'Carto Dark': cartoDark, 'Carto Voyager': cartoVoyager };
-  const overlays = { 'Spots': spotsLayer, 'Loot Spots': lootSpotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer };
+  const overlays = { 'Spots': spotsLayer, 'Loot Spots': lootSpotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer, 'Route': routeLayer };
   const layerControl = L.control.layers(baseLayers, overlays, { position: 'topright', collapsed: true }).addTo(map);
   // Style the control container and add a small label for clarity
   try {
@@ -987,12 +1008,6 @@ async function toggleTracking() {
   }
 }
 
-function toggleRouteVisibility() {
-  routeVisible = !routeVisible;
-  updateRouteDisplay();
-  showMessage(routeVisible ? '👁️ Route sichtbar' : '🙈 Route ausgeblendet', 2000);
-}
-
 function recordRoutePoint(lat, lng) {
   if (!trackingEnabled || !activeRouteId) return;
   
@@ -1018,7 +1033,7 @@ function recordRoutePoint(lat, lng) {
 function updateRouteDisplay() {
   routeLayer.clearLayers();
   
-  if (!routeVisible || routePoints.length < 2) return;
+  if (routePoints.length < 2) return;
   
   const latLngs = routePoints.map(p => [p.lat, p.lng]);
   const polyline = L.polyline(latLngs, {

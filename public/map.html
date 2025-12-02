@@ -64,6 +64,25 @@
     <div id="msgWake" class="msg-line"></div>
     <div id="msgToken" class="msg-line"></div>
   </div>
+  <div class="menu bottom-user-menu bottom-left-menu">
+    <button id="userMenuBtn" class="menu-btn app-btn app-btn-ghost" title="User Menu" aria-label="User Menu">Guest ▾</button>
+    <div id="userMenu" class="menu-dropdown" aria-hidden="true">
+      <div id="userStats" class="user-stats" style="display:none">
+        <div class="us-name"></div>
+        <div class="us-role"></div>
+        <div class="us-xp"></div>
+      </div>
+      <button id="btnRegister" class="app-btn app-btn-ghost" title="Register" aria-label="Register">
+        <span class="btn-label">Register</span>
+      </button>
+      <button id="btnLogin" class="app-btn app-btn-ghost" title="Login" aria-label="Login">
+        <span class="btn-label">Login</span>
+      </button>
+      <button id="btnLogout" class="app-btn app-btn-ghost" title="Logout" aria-label="Logout">
+        <span class="btn-label">Logout</span>
+      </button>
+    </div>
+  </div>
   <div id="bottomControls" class="bottom-controls">
     <button id="btnCenter" class="big-btn app-btn" title="Center" aria-label="Center">
       <!-- crosshair icon -->
@@ -73,45 +92,13 @@
       <!-- compass icon -->
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z" fill="#fff" opacity="0.04"/><path d="M7 17l10-6-6 10-4-4z" fill="#fff"/><circle cx="12" cy="12" r="10" stroke="#fff" stroke-width="0.7" opacity="0.25"/></svg>
     </button>
-    <div class="menu bottom-user-menu">
-      <button id="userMenuBtn" class="menu-btn app-btn app-btn-ghost" title="User Menu" aria-label="User Menu">Guest ▾</button>
-      <div id="userMenu" class="menu-dropdown" aria-hidden="true">
-        <div id="userStats" class="user-stats" style="display:none">
-          <div class="us-name"></div>
-          <div class="us-role"></div>
-          <div class="us-xp"></div>
-        </div>
-        <button id="btnRegister" class="app-btn app-btn-ghost" title="Register" aria-label="Register">
-          <!-- user-plus icon -->
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 12a5 5 0 100-10 5 5 0 000 10z" fill="#fff"/><path d="M12 14c-5 0-9 3-9 6v2h18v-2c0-3-4-6-9-6z" fill="#fff"/><path d="M20 8v2h-2v2h-2V10h2V8h2z" fill="#fff"/></svg>
-          <span class="btn-label">Register</span>
-        </button>
-        <button id="btnLogin" class="app-btn app-btn-ghost" title="Login" aria-label="Login">
-          <!-- login icon -->
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10 17l5-5-5-5v10z" fill="#fff"/><path d="M4 21h14v-2H4V5h2V3H4a2 2 0 00-2 2v14a2 2 0 002 2z" fill="#fff"/></svg>
-          <span class="btn-label">Login</span>
-        </button>
-        <button id="btnLogout" class="app-btn app-btn-ghost" title="Logout" aria-label="Logout">
-          <!-- logout icon -->
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 13v-2H7V8l-5 4 5 4v-3h9z" fill="#fff"/></svg>
-          <span class="btn-label">Logout</span>
-        </button>
-        <hr style="margin:0.5em 0; border:none; border-top:1px solid rgba(255,255,255,0.1)">
-        <button id="btnTrackingToggle" class="app-btn app-btn-ghost state-badge" title="Route Tracking" aria-label="Route Tracking" aria-pressed="false">
-          <!-- route icon -->
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 12h4m8 0h4M12 3v4m0 8v4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="12" r="2" fill="#fff"/><circle cx="18" cy="12" r="2" fill="#fff"/></svg>
-          <span class="btn-label">Tracking</span>
-        </button>
-        <button id="btnRouteToggle" class="app-btn app-btn-ghost" title="Route Anzeigen" aria-label="Route Anzeigen">
-          <!-- eye icon -->
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" stroke="#fff" stroke-width="1.2"/><circle cx="12" cy="12" r="3" fill="#fff"/></svg>
-          <span class="btn-label">Route anzeigen</span>
-        </button>
-      </div>
-    </div>
     <button id="wakelockBtn" class="big-btn app-btn state-badge" title="Display" aria-label="Display" aria-pressed="false">
       <!-- display icon -->
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" fill="#fff"/><path d="M8 20h8" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </button>
+    <button id="btnTrackingToggle" class="big-btn app-btn app-btn-ghost state-badge" title="Route Tracking" aria-label="Route Tracking" aria-pressed="false">
+      <!-- route tracking icon -->
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="6" cy="6" r="2" fill="#fff"/><circle cx="18" cy="18" r="2" fill="#fff"/><path d="M6 8v8l12-12v8" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
   <!-- Leaflet layer control will appear top-right by default -->
