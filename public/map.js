@@ -174,6 +174,8 @@ function showMessage(html, duration = 2000) {
   toast.className = 'toast-message';
   toast.innerHTML = html;
   document.body.appendChild(toast);
+  // position relative to map viewport if possible
+  if (window.CG && typeof window.CG.positionOverlays === 'function') window.CG.positionOverlays();
   // Fade in
   setTimeout(() => toast.classList.add('show'), 10);
   // Remove after duration
@@ -250,13 +252,7 @@ function init() {
   const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   // initialize map with osm
   map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], 14);
-  // UI Pane für Statusleiste und Toasts innerhalb der Karte
-  const uiPane = map.createPane('uiPane');
-  uiPane.classList.add('ui-pane');
-  // über Popups/Marker (700), unter Controls (~1000)
-  uiPane.style.zIndex = '800';
-  uiPane.style.pointerEvents = 'none';
-  window.CG.uiPane = uiPane;
+  // (UI overlays are fixed positioned via CSS / JS, do not attach to map pane)
   // Statusleiste NICHT in das UI-Pane verschieben; bleibt als fixed Overlay im Body
   spotsLayer = L.layerGroup().addTo(map);
   lootSpotsLayer = L.layerGroup().addTo(map);
@@ -452,6 +448,52 @@ function init() {
   if (heatEnabled) { map.addLayer(heatLayer); loadHeatmap(); }
   // expose layer control
   window.CG.layerControl = layerControl;
+
+  // Ensure messageBox sits in body as last child (so stacking order/DOM order is predictable)
+  try {
+    const msg = document.getElementById('messageBox');
+    if (msg && msg.parentElement !== document.body) document.body.appendChild(msg);
+  } catch (e) {}
+
+  // Position statusbar & future toasts relative to the map viewport
+  function positionOverlays() {
+    try {
+      const mapEl = document.getElementById('map');
+      const msg = document.getElementById('messageBox');
+      if (!mapEl || !msg) return;
+      const rect = mapEl.getBoundingClientRect();
+      // center X pixel
+      const centerX = Math.round(rect.left + rect.width / 2);
+      
+      // ENSURE the messageBox stays visible and positioned correctly
+      msg.style.position = 'fixed';
+      msg.style.left = centerX + 'px';
+      msg.style.transform = 'translateX(-50%)';
+      msg.style.top = Math.max(rect.top + 12, 8) + 'px';
+      msg.style.zIndex = '100500';
+      msg.style.display = 'flex';
+      // width relative to map (70%) up to a cap
+      const wanted = Math.round(rect.width * 0.7);
+      msg.style.width = Math.min(wanted, 1000) + 'px';
+      
+      // ensure existing toasts (if any) sit under the status bar
+      document.querySelectorAll('.toast-message').forEach((t) => {
+        t.style.position = 'fixed';
+        t.style.left = centerX + 'px';
+        t.style.transform = 'translateX(-50%)';
+        t.style.top = Math.max(rect.top + 90, 40) + 'px';
+        t.style.zIndex = '100501';
+      });
+    } catch (e) { console.error('positionOverlays error:', e); }
+  }
+  // initial position and on resize/scroll
+  // Delay first call to ensure CSS is loaded
+  setTimeout(() => positionOverlays(), 100);
+  window.CG.positionOverlays = positionOverlays;
+  window.addEventListener('resize', positionOverlays, { passive: true });
+  window.addEventListener('scroll', positionOverlays, { passive: true });
+  // Leaflet fires resize on map container changes
+  if (map) map.on('resize', positionOverlays);
 }
 
 function updateUserMenuUI() {
@@ -924,7 +966,18 @@ async function loadHeatmap() {
     const infoEl = document.getElementById('msgToken');
     if (infoEl) infoEl.innerText = '';
   }
-  const res = await fetch(`${baseUrl}/heatmap/${currentPlayer.id}`, { headers: getAuthHeaders() }).then(r=>r.json());
+  const resp = await fetch(`${baseUrl}/heatmap/${currentPlayer.id}`, { headers: getAuthHeaders() });
+  if (!resp.ok) {
+    if (resp.status === 401) {
+      const infoEl = document.getElementById('msgToken');
+      if (infoEl) infoEl.innerText = 'Heatmap: login required or token expired (401)';
+      return;
+    } else {
+      console.warn('heatmap: server returned', resp.status);
+      return;
+    }
+  }
+  const res = await resp.json();
   if (!Array.isArray(res)) return;
   const points = res.map(s => [s.position.latitude, s.position.longitude, Math.max(0.1, Math.min(1, s.playerClaimShare))]);
   try {
