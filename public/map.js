@@ -13,6 +13,9 @@ let currentHeading = 0;
 let localLootSpots = [];
 let lootSpotsGenerated = false;
 const LOOT_COLLECTION_RADIUS = 25; // meters
+const AUTO_LOG_RADIUS = 10; // meters for auto-logs
+const AUTO_LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
+let autoLogCooldowns = {}; // { spotId: timestamp }
 
 // --- Local Loot Spots (Phase 1) - Global functions ---
 function generateLocalLootSpotsAround(center) {
@@ -165,6 +168,61 @@ function showMessage(html, duration = 2000) {
     line.innerHTML = html;
     box.appendChild(line);
     setTimeout(() => line.remove(), duration);
+  }
+}
+
+function tryAutoLogNearbySpots(currentPos) {
+  if (!currentPos || !currentPlayer || currentPlayer.mode !== 'LOGGED_IN') return;
+  
+  Object.values(window.loadedSpots || {}).forEach(spot => {
+    const dist = distanceBetween(currentPos, spot.position);
+    if (dist <= AUTO_LOG_RADIUS) {
+      const lastLog = autoLogCooldowns[spot.id] || 0;
+      const now = Date.now();
+      if (now - lastLog >= AUTO_LOG_COOLDOWN) {
+        performAutoLog(spot, dist);
+      }
+    }
+  });
+}
+
+async function performAutoLog(spot, dist) {
+  autoLogCooldowns[spot.id] = Date.now();
+  
+  const payload = {
+    playerId: currentPlayer.id,
+    distance: dist
+  };
+  
+  try {
+    const res = await fetch(`${baseUrl}/spots/${spot.id}/auto-log`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (res.status === 429) {
+      // Cooldown active, ignore silently
+      return;
+    }
+    
+    const data = await res.json();
+    if (data.updatedPlayer) {
+      currentPlayer = data.updatedPlayer;
+      localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
+      updateUserMenuUI();
+    }
+    
+    showMessage(`🔄 Auto-Log: ${spot.name} (+${data.xpGained} XP)`, 2000);
+    
+    // Update spot claim info if available
+    if (window.loadedSpots && data.updatedSpotClaimInfo) {
+      window.loadedSpots[spot.id].claimInfo = data.updatedSpotClaimInfo;
+    }
+    
+    if (heatEnabled) loadHeatmap();
+  } catch (e) {
+    console.warn('Auto-log failed', e);
   }
 }
 
@@ -666,6 +724,9 @@ async function getPositionAndLoad() {
     
     // Try to collect nearby loot
     tryCollectNearbyLootSpots(currentPos);
+    
+    // Try auto-logs for nearby permanent spots
+    tryAutoLogNearbySpots(currentPos);
   }, (err)=>{ 
     console.warn('geo err', err); 
     loadSpots();
@@ -685,7 +746,9 @@ async function loadSpots(lat = 52.52, lon = 13.405) {
   const rad = 2000; // 2km radius
   const res = await fetch(`${baseUrl}/spots?lat=${lat}&lon=${lon}&radius=${rad}`, { headers: getAuthHeaders() }).then(r=>r.json());
   spotsLayer.clearLayers();
+  window.loadedSpots = {};
   for (const s of res) {
+    window.loadedSpots[s.id] = s;
     const m = L.marker([s.position.latitude, s.position.longitude]);
     m.bindPopup(`<b>${s.name}</b><br/>${s.description || ''}<br/>baseXP: ${s.baseXP} autoXP: ${s.autoXP}<br/>
       <button class='btnManual app-btn app-btn-ghost' data-id='${s.id}' title='Manual Log' aria-label='Manual Log'>
@@ -786,6 +849,7 @@ async function centerToMe() {
     setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     loadLivePlayers(pos.coords.latitude, pos.coords.longitude);
     tryCollectNearbyLootSpots(currentPos);
+    tryAutoLogNearbySpots(currentPos);
     if (window.CG && window.CG.socket && currentPlayer) { window.CG.socket.emit('positionUpdate', { playerId: currentPlayer.id, position: { latitude: pos.coords.latitude, longitude: pos.coords.longitude } }); }
   });
 }
