@@ -4,7 +4,7 @@ const baseUrl = window.location.origin;
 // ensure our developer helper object exists early so initSocket can set socket
 window.CG = window.CG || {};
 let currentPlayer = JSON.parse(localStorage.getItem('cg_player') || 'null');
-let map, spotsLayer, lootSpotsLayer, livePlayersLayer, heatLayer;
+let map, spotsLayer, lootSpotsLayer, livePlayersLayer, heatLayer, routeLayer;
 let heatEnabled = true; // Heatmap default an
 let pollInterval = 5000; // ms
 let playerMarker = null;
@@ -16,6 +16,12 @@ const LOOT_COLLECTION_RADIUS = 25; // meters
 const AUTO_LOG_RADIUS = 10; // meters for auto-logs
 const AUTO_LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 let autoLogCooldowns = {}; // { spotId: timestamp }
+
+// Route tracking
+let trackingEnabled = false;
+let activeRouteId = null;
+let routePoints = [];
+let routeVisible = true;
 
 // --- Local Loot Spots (Phase 1) - Global functions ---
 function generateLocalLootSpotsAround(center) {
@@ -243,6 +249,7 @@ function init() {
   spotsLayer = L.layerGroup().addTo(map);
   lootSpotsLayer = L.layerGroup().addTo(map);
   livePlayersLayer = L.layerGroup().addTo(map);
+  routeLayer = L.layerGroup().addTo(map);
   heatLayer = L.heatLayer([], { radius: 25, blur: 15, maxZoom: 17 });
 
   document.getElementById('btnRegister').addEventListener('click', onRegister);
@@ -251,6 +258,24 @@ function init() {
   document.getElementById('btnCenter').addEventListener('click', centerToMe);
   document.getElementById('btnCompass').addEventListener('click', async (ev)=>{ compassEnabled = !compassEnabled; if (compassEnabled) enableCompass(); else disableCompass(); updateCompassButton(); });
   document.getElementById('wakelockBtn').addEventListener('click', async ()=>{ await toggleWakeLock(); });
+  
+  // Route tracking buttons
+  const btnTrackingToggle = document.getElementById('btnTrackingToggle');
+  if (btnTrackingToggle) {
+    btnTrackingToggle.addEventListener('click', async () => {
+      await toggleTracking();
+      btnTrackingToggle.setAttribute('aria-pressed', String(trackingEnabled));
+      btnTrackingToggle.classList.toggle('active', trackingEnabled);
+    });
+  }
+  
+  const btnRouteToggle = document.getElementById('btnRouteToggle');
+  if (btnRouteToggle) {
+    btnRouteToggle.addEventListener('click', () => {
+      toggleRouteVisibility();
+    });
+  }
+  
   // layers button toggles the builtin control open/close if possible
   // The layer control is shown in the top-right by default; no bottom toggle needed.
 
@@ -770,6 +795,9 @@ async function getPositionAndLoad() {
       // Update map view to follow player
       map.setView([lat, lon], map.getZoom());
       
+      // Record route point if tracking is enabled
+      recordRoutePoint(lat, lon);
+      
       // Try to collect nearby loot spots
       tryCollectNearbyLootSpots(currentPos);
       
@@ -903,6 +931,104 @@ async function centerToMe() {
     tryAutoLogNearbySpots(currentPos);
     if (window.CG && window.CG.socket && currentPlayer) { window.CG.socket.emit('positionUpdate', { playerId: currentPlayer.id, position: { latitude: pos.coords.latitude, longitude: pos.coords.longitude } }); }
   });
+}
+
+// --- Route Tracking Functions ---
+async function startTracking() {
+  if (!currentPlayer || currentPlayer.mode !== 'LOGGED_IN') {
+    showMessage('⚠️ Tracking nur für eingeloggte Spieler verfügbar', 3000);
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${baseUrl}/tracking/start`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ playerId: currentPlayer.id })
+    });
+    const data = await response.json();
+    
+    if (data.route) {
+      trackingEnabled = true;
+      activeRouteId = data.route.id;
+      routePoints = [];
+      showMessage('📍 Route-Tracking gestartet', 2000);
+      updateRouteDisplay();
+    }
+  } catch (e) {
+    console.error('Failed to start tracking', e);
+    showMessage('❌ Tracking-Start fehlgeschlagen', 3000);
+  }
+}
+
+async function stopTracking() {
+  if (!activeRouteId) return;
+  
+  try {
+    const response = await fetch(`${baseUrl}/tracking/${activeRouteId}/stop`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    const data = await response.json();
+    
+    trackingEnabled = false;
+    showMessage(`✓ Route beendet (${routePoints.length} Punkte)`, 3000);
+    activeRouteId = null;
+  } catch (e) {
+    console.error('Failed to stop tracking', e);
+  }
+}
+
+async function toggleTracking() {
+  if (trackingEnabled) {
+    await stopTracking();
+  } else {
+    await startTracking();
+  }
+}
+
+function toggleRouteVisibility() {
+  routeVisible = !routeVisible;
+  updateRouteDisplay();
+  showMessage(routeVisible ? '👁️ Route sichtbar' : '🙈 Route ausgeblendet', 2000);
+}
+
+function recordRoutePoint(lat, lng) {
+  if (!trackingEnabled || !activeRouteId) return;
+  
+  const point = { lat, lng, timestamp: Date.now() };
+  routePoints.push(point);
+  
+  // Send to backend
+  fetch(`${baseUrl}/tracking/${activeRouteId}/point`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ 
+      position: { latitude: lat, longitude: lng },
+      timestamp: point.timestamp
+    })
+  }).catch(e => console.warn('Failed to send route point', e));
+  
+  // Update display if visible
+  if (routeVisible) {
+    updateRouteDisplay();
+  }
+}
+
+function updateRouteDisplay() {
+  routeLayer.clearLayers();
+  
+  if (!routeVisible || routePoints.length < 2) return;
+  
+  const latLngs = routePoints.map(p => [p.lat, p.lng]);
+  const polyline = L.polyline(latLngs, {
+    color: '#4f8cff',
+    weight: 4,
+    opacity: 0.7,
+    smoothFactor: 1
+  });
+  
+  routeLayer.addLayer(polyline);
 }
 
 async function pollAll() {
