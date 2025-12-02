@@ -129,6 +129,7 @@ function init() {
   function generateLocalLootSpotsAround(center) {
     const spots = [];
     const count = 5 + Math.floor(Math.random() * 6); // 5-10 spots
+    console.log(`Generating ${count} loot spots around`, center);
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * 2 * Math.PI;
       const radius = 50 + Math.random() * 100; // 50-150m
@@ -144,6 +145,7 @@ function init() {
         createdAt: Date.now()
       });
     }
+    console.log('Generated loot spots:', spots);
     return spots;
   }
 
@@ -158,9 +160,11 @@ function init() {
   }
 
   function displayLootSpots() {
+    console.log('Displaying loot spots:', localLootSpots.length, 'total');
     lootSpotsLayer.clearLayers();
     localLootSpots.forEach(loot => {
       if (loot.isCollected) return;
+      console.log('Adding loot marker at', loot.position);
       const marker = L.marker([loot.position.lat, loot.position.lng], {
         icon: L.divIcon({
           className: 'loot-spot-icon',
@@ -172,6 +176,7 @@ function init() {
       marker.bindPopup(`<b>Loot Spot</b><br>XP: ${loot.xpReward}${loot.itemReward ? '<br>Item: '+loot.itemReward.name : ''}`);
       lootSpotsLayer.addLayer(marker);
     });
+    console.log('Loot layer now has', lootSpotsLayer.getLayers().length, 'markers');
   }
 
   function tryCollectNearbyLootSpots(currentPos) {
@@ -274,7 +279,7 @@ function init() {
 
   // add baseLayers + overlays to control
   const baseLayers = { 'OpenStreetMap': osm, 'Topo': topo, 'Stamen Toner': stamenToner, 'Stamen Watercolor': stamenWater, 'Esri Satellite': esriSat, 'Carto Positron': cartoPositron, 'Carto Dark': cartoDark, 'Carto Voyager': cartoVoyager };
-  const overlays = { 'Spots': spotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer };
+  const overlays = { 'Spots': spotsLayer, 'Loot Spots': lootSpotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer };
   const layerControl = L.control.layers(baseLayers, overlays, { position: 'topright', collapsed: true }).addTo(map);
   // Style the control container and add a small label for clarity
   try {
@@ -602,6 +607,7 @@ async function getPositionAndLoad() {
   }
   navigator.geolocation.getCurrentPosition((pos)=>{
     const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    console.log('GPS fix received:', currentPos);
     map.setView([pos.coords.latitude, pos.coords.longitude], 16);
     loadSpots(pos.coords.latitude, pos.coords.longitude);
     // update player marker to current GPS position immediately
@@ -609,6 +615,7 @@ async function getPositionAndLoad() {
     
     // Generate loot spots on first GPS fix
     if (!lootSpotsGenerated) {
+      console.log('Generating loot spots for first time');
       localLootSpots = generateLocalLootSpotsAround(currentPos);
       lootSpotsGenerated = true;
       displayLootSpots();
