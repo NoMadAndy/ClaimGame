@@ -33,6 +33,10 @@
 .menu .menu-dropdown button:hover{ background:linear-gradient(90deg,var(--color-primary),var(--color-primary-2)); color:#fff }
 /* bottom menu (in bottomControls) should show dropdown upwards */
 .bottom-user-menu .menu-dropdown{ top:auto; bottom:46px; right:0; }
+.bottom-user-menu:hover .menu-dropdown{ display:block; }
+.bottom-user-menu { position: relative; }
+.bottom-user-menu .menu-btn { display:inline-flex; align-items:center; gap:8px; }
+.bottom-user-menu .menu-btn .btn-label { font-weight: 600; }
 .user-stats { padding: 10px 8px; border-radius: 10px; background: linear-gradient(90deg,#f7f9ff,#eef6ff); margin-bottom: 8px; text-align: left; }
 .user-stats .us-name { font-weight:700; font-size: 1.05em; margin-bottom: 4px }
 .user-stats .us-role { font-size: 0.95em; color: #333; margin-bottom: 4px }
@@ -47,6 +51,10 @@
 .bottom-controls .big-btn:hover{ transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255, 135, 80, 0.20) }
 .bottom-controls .big-btn.secondary{ background: linear-gradient(90deg,#e0f7ff 0%,#bfeaff 100%); }
 .bottom-controls .big-btn.active{ box-shadow:0 10px 40px rgba(63,140,255,0.22); transform: translateY(-3px); border: 1px solid rgba(255,255,255,0.12); }
+/* Ensure SVG icons visible on dark gradient buttons */
+.big-btn svg { display:inline-block; width: 24px; height: 24px; }
+.big-btn svg *, .app-btn svg * { fill:#fff !important; stroke:#fff !important; }
+.app-btn svg { display:inline-block; width: 22px; height: 22px; margin-right: 6px; }
 
 /* Mobile adjustments: bottom controls should be larger and spaced */
 @media (max-width: 600px) {

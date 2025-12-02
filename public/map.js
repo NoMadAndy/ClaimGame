@@ -323,7 +323,7 @@ function updateCompassButton() {
   const btn = document.getElementById('btnCompass');
   if (!btn) return;
   // Keep icon intact and update aria-pressed / title only
-  const isActive = !!window.CG?.compassActive;
+  const isActive = !!window.CG?.compassActive || !!compassEnabled;
   btn.setAttribute('aria-pressed', String(isActive));
   btn.setAttribute('title', isActive ? 'Kompass aktiv' : 'Kompass inaktiv');
   btn.classList.toggle('active', isActive);
