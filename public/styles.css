@@ -1,3 +1,13 @@
+/* --- Unified Color Palette --- */
+:root {
+	--color-primary: #4f8cff;
+	--color-primary-2: #38c6ff;
+	--color-bg: #ffffff;
+	--color-bg-translucent: rgba(255,255,255,0.9);
+	--color-text: #111111;
+	--color-text-muted: #333333;
+	--shadow-soft: 0 6px 18px rgba(0,0,0,0.12);
+}
 /* Player marker style */
 .cg-player-icon .player-marker { display:flex; align-items:center; justify-content:center; transform-origin: center center; width: 56px; height: 56px; }
 .cg-player-icon svg { filter: drop-shadow(0 3px 4px rgba(0,0,0,0.25)); transform-origin: center center; }
@@ -5,7 +15,7 @@
 
 /* --- Modernes Panel-Design (global) --- */
 .modern-panel, #controls, .dev-panel, #spots, #playerInfo {
-	background: rgba(255,255,255,0.97);
+	background: var(--color-bg-translucent);
 	border-radius: 18px;
 	box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 4px rgba(0,0,0,0.08);
 	padding: 1.5em 1.2em;
@@ -16,11 +26,11 @@
 	transition: box-shadow 0.2s;
 }
 .menu { position: relative; display:inline-block; }
-.menu .menu-btn{ background: linear-gradient(90deg, #4f8cff 0%, #38c6ff 100%); color:#fff; border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight:700; box-shadow:0 2px 8px rgba(79,140,255,0.08) }
-.menu .menu-dropdown{ display:none; position:absolute; right:0; top:40px; background:white; padding:8px; border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,0.12); min-width:160px; z-index:5000 }
+.menu .menu-btn{ background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-2) 100%); color:#fff; border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; font-weight:700; box-shadow:0 2px 8px rgba(79,140,255,0.08) }
+.menu .menu-dropdown{ display:none; position:absolute; right:0; top:40px; background: var(--color-bg); padding:8px; border-radius:12px; box-shadow: var(--shadow-soft); min-width:180px; z-index:5000; color: var(--color-text) }
 .menu .menu-dropdown.show { display:block }
 .menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:transparent; border-radius:8px; border:1px solid #e9f5ff; padding:8px; font-size:0.95em; cursor:pointer }
-.menu .menu-dropdown button:hover{ background:linear-gradient(90deg,#4f8cff,#38c6ff); color:#fff }
+.menu .menu-dropdown button:hover{ background:linear-gradient(90deg,var(--color-primary),var(--color-primary-2)); color:#fff }
 /* bottom menu (in bottomControls) should show dropdown upwards */
 .bottom-user-menu .menu-dropdown{ top:auto; bottom:46px; right:0; }
 .user-stats { padding: 10px 8px; border-radius: 10px; background: linear-gradient(90deg,#f7f9ff,#eef6ff); margin-bottom: 8px; text-align: left; }
@@ -33,7 +43,7 @@
 
 /* Bottom controls (Center, Kompass, Display, Layers) */
 .bottom-controls { position: fixed; left:50%; transform: translateX(-50%); bottom: 18px; z-index: 9999; display:flex; gap:10px; align-items:center; justify-content:center; }
-.bottom-controls .big-btn { background: linear-gradient(90deg,#4f8cff 0%, #38c6ff 100%); border:none; color:#fff; padding: 12px 18px; border-radius: 999px; font-weight:700; box-shadow:0 6px 18px rgba(79,140,255,0.08); cursor:pointer; transition: transform 0.12s ease, box-shadow 0.12s ease }
+.bottom-controls .big-btn { background: linear-gradient(90deg,var(--color-primary) 0%, var(--color-primary-2) 100%); border:none; color:#fff; padding: 12px 18px; border-radius: 999px; font-weight:700; box-shadow: var(--shadow-soft); cursor:pointer; transition: transform 0.12s ease, box-shadow 0.12s ease }
 .bottom-controls .big-btn:hover{ transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255, 135, 80, 0.20) }
 .bottom-controls .big-btn.secondary{ background: linear-gradient(90deg,#e0f7ff 0%,#bfeaff 100%); }
 .bottom-controls .big-btn.active{ box-shadow:0 10px 40px rgba(63,140,255,0.22); transform: translateY(-3px); border: 1px solid rgba(255,255,255,0.12); }
@@ -70,13 +80,16 @@
 }
 .modern-panel label, #controls label, .dev-panel label {
 	font-size: 1em;
-	margin-top: 0.5em;
-	display: inline-block;
-	color: #333;
-}
-.modern-panel input, #controls input, .dev-panel input {
-	font-size: 1em;
-	padding: 0.5em 0.7em;
+		--ui-scale: 1.5;
+		/* Playful, modern palette */
+		--color-primary: #7c3aed;   /* vivid purple */
+		--color-primary-2: #22d3ee; /* cyan accent */
+		--color-accent: #f59e0b;    /* amber for highlights */
+		--color-bg: #0b1020;        /* deep blue-black */
+		--color-bg-translucent: rgba(11, 16, 32, 0.9);
+		--color-text: #e6edf3;      /* soft white */
+		--color-text-muted: #9aa4b2;/* cool gray */
+		--shadow-soft: 0 10px 28px rgba(3, 8, 20, 0.45);
 	border-radius: 0.7em;
 	border: 1px solid #cce2ff;
 	margin: 0.2em 0.5em 0.2em 0;
@@ -89,16 +102,41 @@
 .modern-panel .spot, #spots .spot {
 	background: #f7faff;
 	border-radius: 1em;
+	.app-btn[aria-pressed="true"], .app-btn.active {
+		background: var(--color-primary-2);
+		color: #082f3a;
+	}
+/* Small ON/OFF badge for buttons with state */
+.app-btn.state-badge { position: relative; }
+.app-btn.state-badge::after {
+	content: attr(data-badge);
+	position: absolute;
+	top: 6px; right: 8px;
+	font-size: 10px;
+	line-height: 1;
+	padding: 2px 6px;
+	border-radius: 8px;
+	background: rgba(255,255,255,0.15);
+	color: var(--color-text);
+}
+.app-btn.state-badge[aria-pressed="true"]::after {
+	content: 'ON';
+	background: var(--color-accent);
+	color: #1b1405;
+}
+.app-btn.state-badge[aria-pressed="false"]::after {
+	content: 'OFF';
+}
 	border: 1px solid #e3eefd;
-	padding: 1em 0.8em;
+		background: var(--color-primary);
 	margin: 0.5em 0;
 	font-size: 1em;
 	color: #222;
-}
+		background: linear-gradient(180deg, rgba(17,24,39,0.95) 0%, rgba(11,16,32,0.92) 100%);
 .modern-panel::-webkit-scrollbar, #controls::-webkit-scrollbar, .dev-panel::-webkit-scrollbar {
 	width: 8px;
 	background: #e3eefd;
-}
+		background: var(--color-bg-translucent);
 .modern-panel::-webkit-scrollbar-thumb, #controls::-webkit-scrollbar-thumb, .dev-panel::-webkit-scrollbar-thumb {
 	background: #b3d1ff;
 	border-radius: 8px;
@@ -151,9 +189,9 @@
 .cg-player-icon .player-marker { width: calc(56px * var(--ui-scale)); height: calc(56px * var(--ui-scale)); }
 
 /* unified app button styling for consistency */
-.app-btn { background: linear-gradient(90deg,#4f8cff 0%, #38c6ff 100%); color: white; border:none; padding: calc(10px * var(--ui-scale)) calc(14px * var(--ui-scale)); border-radius: calc(18px * var(--ui-scale)); box-shadow: 0 6px 18px rgba(79,140,255,0.08); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+.app-btn { background: linear-gradient(90deg,var(--color-primary) 0%, var(--color-primary-2) 100%); color: #fff; border:none; padding: calc(10px * var(--ui-scale)) calc(14px * var(--ui-scale)); border-radius: calc(18px * var(--ui-scale)); box-shadow: var(--shadow-soft); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
 .app-btn svg { width: calc(22px * var(--ui-scale)); height: calc(22px * var(--ui-scale)); }
-.app-btn.app-btn-ghost { background: linear-gradient(90deg,#fff,#f0f8ff); color: #111; border: 1px solid #cce6ff }
+.app-btn.app-btn-ghost { background: linear-gradient(90deg,#fff,#f0f8ff); color: var(--color-text); border: 1px solid #cce6ff }
 
 /* Central message box for unified messages */
 .message-box { position: fixed; left: 50%; top: calc(10vh); transform: translateX(-50%); min-width: 320px; max-width: 65vw; z-index: 10005; padding: calc(12px * var(--ui-scale)) calc(18px * var(--ui-scale)); border-radius: calc(14px * var(--ui-scale)); box-shadow: 0 18px 50px rgba(0,0,0,0.18); background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.6); backdrop-filter: blur(6px) saturate(120%); text-align:center; }

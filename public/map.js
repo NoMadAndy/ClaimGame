@@ -125,9 +125,10 @@ function init() {
     const btn = document.getElementById('wakelockBtn');
     if (!btn) return;
     // Keep the icon intact, set aria-pressed and title instead
-    btn.setAttribute('aria-pressed', wakeLockActive ? 'true' : 'false');
-    btn.setAttribute('title', wakeLockActive ? 'Display (Wake Lock ON)' : 'Display (Wake Lock OFF)');
-    if (wakeLockActive) btn.classList.add('active'); else btn.classList.remove('active');
+    const isActive = !!window.CG?.wakeLockActive;
+    btn.setAttribute('aria-pressed', String(isActive));
+    btn.setAttribute('title', isActive ? 'Display bleibt an' : 'Display kann ausgehen');
+    btn.classList.toggle('active', isActive);
   }
   // Button initial setzen
   setTimeout(()=>{ updateWakeLockButton(); }, 200);
@@ -218,6 +219,13 @@ function updateUserMenuUI() {
     // If not logged in, keep logout visible for manual logout if localStorage was set
     if (logoutBtn) logoutBtn.style.display = 'block';
     if (userStats) userStats.style.display = 'none';
+  }
+  const btn = document.getElementById('userMenuBtn');
+  if (btn) {
+    const name = currentPlayer ? currentPlayer.displayName || 'User' : 'Guest';
+    btn.textContent = `${name} ▾`;
+    btn.setAttribute('title', `User: ${name}`);
+    btn.setAttribute('aria-label', `User Menu for ${name}`);
   }
 }
 
@@ -315,15 +323,10 @@ function updateCompassButton() {
   const btn = document.getElementById('btnCompass');
   if (!btn) return;
   // Keep icon intact and update aria-pressed / title only
-  btn.setAttribute('aria-pressed', compassEnabled ? 'true' : 'false');
-  btn.setAttribute('title', compassEnabled ? 'Kompass (ON)' : 'Kompass (OFF)');
-  if (compassEnabled) {
-    btn.classList.add('active');
-    btn.classList.add('secondary');
-  } else {
-    btn.classList.remove('active');
-    btn.classList.remove('secondary');
-  }
+  const isActive = !!window.CG?.compassActive;
+  btn.setAttribute('aria-pressed', String(isActive));
+  btn.setAttribute('title', isActive ? 'Kompass aktiv' : 'Kompass inaktiv');
+  btn.classList.toggle('active', isActive);
 }
 
 function onDeviceOrientation(e) {
