@@ -1,4 +1,4 @@
-# ClaimGame – Domänenmodell und Spielmechanik
+# ClaimGame – Domänenmodell und Spielmechanik :-)
 
 Dieses Dokument beschreibt die Spielmechanik und Spiellogik von **ClaimGame**, einem ortsbasierten GPS-Spiel. Die Beschreibung ist **technologieunabhängig** und kann auf beliebige Plattformen (Mobile, Web, Desktop mit GPS, AR-Geräte etc.) übertragen werden.
 
