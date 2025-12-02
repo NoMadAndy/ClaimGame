@@ -64,26 +64,26 @@
   </div>
     <div id="map">
     </div>
-  <div class="menu bottom-user-menu bottom-left-menu">
-    <button id="userMenuBtn" class="menu-btn app-btn app-btn-ghost" title="User Menu" aria-label="User Menu">Guest ▾</button>
-    <div id="userMenu" class="menu-dropdown" aria-hidden="true">
-      <div id="userStats" class="user-stats" style="display:none">
-        <div class="us-name"></div>
-        <div class="us-role"></div>
-        <div class="us-xp"></div>
-      </div>
-      <button id="btnRegister" class="app-btn app-btn-ghost" title="Register" aria-label="Register">
-        <span class="btn-label">Register</span>
-      </button>
-      <button id="btnLogin" class="app-btn app-btn-ghost" title="Login" aria-label="Login">
-        <span class="btn-label">Login</span>
-      </button>
-      <button id="btnLogout" class="app-btn app-btn-ghost" title="Logout" aria-label="Logout">
-        <span class="btn-label">Logout</span>
-      </button>
-    </div>
-  </div>
   <div id="bottomControls" class="bottom-controls">
+    <div class="menu bottom-user-menu">
+      <button id="userMenuBtn" class="menu-btn app-btn app-btn-ghost" title="User Menu" aria-label="User Menu">Guest ▾</button>
+      <div id="userMenu" class="menu-dropdown" aria-hidden="true">
+        <div id="userStats" class="user-stats" style="display:none">
+          <div class="us-name"></div>
+          <div class="us-role"></div>
+          <div class="us-xp"></div>
+        </div>
+        <button id="btnRegister" class="app-btn app-btn-ghost" title="Register" aria-label="Register">
+          <span class="btn-label">Register</span>
+        </button>
+        <button id="btnLogin" class="app-btn app-btn-ghost" title="Login" aria-label="Login">
+          <span class="btn-label">Login</span>
+        </button>
+        <button id="btnLogout" class="app-btn app-btn-ghost" title="Logout" aria-label="Logout">
+          <span class="btn-label">Logout</span>
+        </button>
+      </div>
+    </div>
     <button id="btnCenter" class="big-btn app-btn" title="Center" aria-label="Center">
       <!-- crosshair icon -->
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="2" fill="#fff"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M17.66 6.34l1.41-1.41M4.93 19.07l1.41-1.41" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -105,7 +105,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-  <link rel="stylesheet" href="styles.css" />
-  <script src="map.js"></script>
+  <link rel="stylesheet" href="styles.css?v=2" />
+  <script src="map.js?v=2"></script>
 </body>
 </html>

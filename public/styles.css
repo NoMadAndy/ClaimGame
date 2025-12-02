@@ -32,9 +32,10 @@
 .menu .menu-dropdown button{ display:block; width:100%; margin: 6px 0; background:rgba(255,255,255,0.1); border-radius:8px; border:1px solid rgba(255,255,255,0.3); padding:8px; font-size:0.95em; cursor:pointer; color:#fff; font-weight:600; }
 .menu .menu-dropdown button:hover{ background:linear-gradient(90deg,var(--color-primary),var(--color-primary-2)); color:#fff; border-color:var(--color-primary); }
 /* bottom menu (in bottomControls) should show dropdown upwards */
-.bottom-user-menu .menu-dropdown{ top:auto; bottom:46px; left:0; }
-.bottom-user-menu { position: fixed; bottom:20px; left:20px; z-index:9999; }
-.bottom-user-menu .menu-btn { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.85); color:#fff; min-width:140px; min-height:140px; font-size:1.8em; border-radius:999px; }
+.bottom-user-menu .menu-dropdown{ top:auto; bottom:160px; left:50%; transform: translateX(-50%); }
+.bottom-user-menu { position: relative; z-index: 9999; }
+.bottom-user-menu .menu-btn { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.85); color:#fff; min-width:140px; min-height:140px; font-size:1.8em; border-radius:999px; border:none; cursor:pointer; padding: 24px 36px; box-shadow: var(--shadow-soft); transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.bottom-user-menu .menu-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
 .bottom-user-menu .menu-btn .btn-label { font-weight: 600; }
 .user-stats { padding: 10px 8px; border-radius: 10px; background: linear-gradient(90deg,rgba(30,30,30,0.95),rgba(50,50,50,0.95)); margin-bottom: 8px; text-align: left; color:#fff; }
 .user-stats .us-name { font-weight:700; font-size: 1.05em; margin-bottom: 4px; color:#fff; }
@@ -72,10 +73,12 @@
 	}
 	.bottom-user-menu .menu-btn { 
 		font-size: 1.1em; 
-		padding: 10px 14px;
+		padding: 14px 20px;
+		min-width: 160px;
+		min-height: 160px;
 	}
 	.bottom-user-menu .menu-dropdown { 
-		bottom: 60px; 
+		bottom: 180px; 
 	}
 }
 .modern-panel h1, .modern-panel h2, #controls h1, .dev-panel h1 {
@@ -302,50 +305,62 @@
 	width: 70vw;
 	max-width: 1000px;
 	z-index: 100500; /* very high to ensure it's above map panes */
-	padding: 8px 16px;
-	border-radius: 12px;
-	box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-	background: rgba(0,0,0,0.85);
-	border: 1px solid rgba(255,255,255,0.2);
-	backdrop-filter: blur(8px);
+	padding: 12px 20px;
+	border-radius: 16px;
+	box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+	background: rgba(0,0,0,0.3);
+	border: 1px solid rgba(255,255,255,0.15);
+	backdrop-filter: blur(12px);
 	text-align: center;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 6px;
 	pointer-events: none;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+	letter-spacing: 0.3px;
 }
 .message-box .msg-line {
-	font-size: 0.95em;
+	font-size: 0.9em;
 	color: #fff;
 	margin: 0;
-	line-height: 1.4;
-	font-weight: 500;
+	line-height: 1.5;
+	font-weight: 400;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 .message-box .msg-line:empty { display: none; }
+.message-box #msgStatus::before { content: '📍 '; }
+.message-box #msgStats::before { content: '⭐ '; }
+.message-box #msgWake::before { content: '🔋 '; }
+.message-box #msgToken::before { content: '🔐 '; }
 
 /* Fixed Toasts knapp unter der Statusleiste */
 .toast-message {
 	position: fixed;
 	left: 50%;
-	top: 90px;
-	transform: translateX(-50%);
+	top: 100px;
+	transform: translateX(-50%) translateY(0);
 	z-index: 100501; /* above message-box */
-	padding: 12px 24px;
-	border-radius: 24px;
-	background: rgba(0,0,0,0.9);
+	padding: 14px 28px;
+	border-radius: 32px;
+	background: rgba(0,0,0,0.35);
+	border: 1px solid rgba(255,255,255,0.15);
 	color: #fff;
-	font-size: 1.1em;
-	font-weight: 600;
-	box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+	font-size: 1em;
+	font-weight: 500;
+	box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 	opacity: 0;
-	transition: opacity 0.3s ease, transform 0.3s ease;
+	transition: opacity 0.3s cubic-bezier(0.25,0.46,0.45,0.94), top 0.3s cubic-bezier(0.25,0.46,0.45,0.94), transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
 	pointer-events: none;
 	text-align: center;
 	max-width: 70vw;
+	backdrop-filter: blur(10px);
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 .toast-message.show {
 	opacity: 1;
-	transform: translateX(-50%) translateY(-10px);
+	transform: translateX(-50%) translateY(0);
 }
 
 @media (max-width: 600px) {
@@ -353,8 +368,9 @@
 		top: 8px;
 		width: 90vw;
 		max-width: 90vw;
-		font-size: 1.1em;
+		font-size: 1em;
+		padding: 10px 16px;
 	}
-	.message-box .msg-line { font-size: 1em; }
-	.toast-message { top: 120px; font-size: 1.2em; padding: 14px 28px; max-width: 90vw; }
+	.message-box .msg-line { font-size: 0.9em; line-height: 1.4; }
+	.toast-message { font-size: 0.95em; padding: 12px 24px; max-width: 90vw; }
 }

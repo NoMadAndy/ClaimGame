@@ -174,6 +174,16 @@ function showMessage(html, duration = 2000) {
   toast.className = 'toast-message';
   toast.innerHTML = html;
   document.body.appendChild(toast);
+  
+  // Berechne die Position basierend auf anderen aktiven Toasts
+  const activeToasts = document.querySelectorAll('.toast-message');
+  const toastIndex = Array.from(activeToasts).indexOf(toast);
+  const baseTop = 100; // Pixel von oben
+  const toastHeight = 55; // Ungefähre Höhe eines Toasts + Gap
+  const offsetTop = baseTop + (toastIndex * toastHeight);
+  
+  toast.style.top = offsetTop + 'px';
+  
   // position relative to map viewport if possible
   if (window.CG && typeof window.CG.positionOverlays === 'function') window.CG.positionOverlays();
   // Fade in
@@ -181,7 +191,14 @@ function showMessage(html, duration = 2000) {
   // Remove after duration
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => {
+      toast.remove();
+      // Re-position remaining toasts
+      const remaining = document.querySelectorAll('.toast-message');
+      remaining.forEach((t, idx) => {
+        t.style.top = (baseTop + (idx * toastHeight)) + 'px';
+      });
+    }, 300);
   }, duration);
 }
 
@@ -426,18 +443,11 @@ function init() {
   const baseLayers = { 'OpenStreetMap': osm, 'Topo': topo, 'Stamen Toner': stamenToner, 'Stamen Watercolor': stamenWater, 'Esri Satellite': esriSat, 'Carto Positron': cartoPositron, 'Carto Dark': cartoDark, 'Carto Voyager': cartoVoyager };
   const overlays = { 'Spots': spotsLayer, 'Loot Spots': lootSpotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer, 'Route': routeLayer };
   const layerControl = L.control.layers(baseLayers, overlays, { position: 'topright', collapsed: true }).addTo(map);
-  // Style the control container and add a small label for clarity
+  // Style the control container
   try {
     const ctrl = document.querySelector('.leaflet-control-layers');
     if (ctrl) {
       ctrl.classList.add('modern-layer-control');
-      // add label (only once) to visually label the control
-      if (!ctrl.querySelector('.layers-label')) {
-        const lbl = document.createElement('div');
-        lbl.className = 'layers-label';
-        lbl.innerText = 'Karten';
-        ctrl.insertBefore(lbl, ctrl.firstChild);
-      }
       // ensure control is visible (don't hide). For mobile collapsed default is used.
       ctrl.classList.remove('hidden');
       ctrl.classList.remove('open');
