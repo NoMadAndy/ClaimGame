@@ -156,13 +156,19 @@
 .app-btn.app-btn-ghost { background: linear-gradient(90deg,#fff,#f0f8ff); color: #111; border: 1px solid #cce6ff }
 
 /* Central message box for unified messages */
-.message-box { position: fixed; left: 50%; transform: translateX(-50%); top: 10vh; min-width: 280px; max-width: 70vw; z-index: 10005; padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale)); border-radius: calc(12px * var(--ui-scale)); box-shadow: 0 10px 40px rgba(0,0,0,0.12); background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,255,0.95)); text-align:center; }
+.message-box { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); min-width: 320px; max-width: 65vw; z-index: 10005; padding: calc(12px * var(--ui-scale)) calc(18px * var(--ui-scale)); border-radius: calc(14px * var(--ui-scale)); box-shadow: 0 18px 50px rgba(0,0,0,0.18); background: rgba(255,255,255,0.72); border: 1px solid rgba(255,255,255,0.6); backdrop-filter: blur(6px) saturate(120%); text-align:center; }
 .message-box .msg-line { font-size: calc(1.05em * var(--ui-scale)); color: #222; margin: 6px 0; }
 
 /* When screen smaller, push message box up a bit and full width */
 @media (max-width: 600px) {
-	.message-box { top: 6vh; left: 50%; transform: translateX(-50%); min-width: 86vw; }
+	.message-box { top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 86vw; max-width: 94vw; padding: calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale)); }
 }
+
+/* Top bar to arrange top panels in one line */
+.top-bar { position: fixed; left: calc(8px * var(--ui-scale)); right: calc(8px * var(--ui-scale)); top: calc(8px * var(--ui-scale)); display: flex; align-items: flex-start; gap: calc(8px * var(--ui-scale)); z-index: 10006; justify-content: space-between; pointer-events: none; }
+.top-bar > * { pointer-events: auto; }
+.top-bar .message-box { /* no longer used - kept safe for legacy */ }
+.top-bar .modern-panel.top-panel { margin: 0; }
 
 /* top-right small helper button for layer toggle */
 /* removed rightControls button - we rely on native Leaflet control */

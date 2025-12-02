@@ -6,21 +6,18 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     html,body,#map{height:100%;margin:0;padding:0}
-    #controls{position:absolute;left:8px;top:8px;z-index:999;background:rgba(255,255,255,0.95);padding:8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+    #controls{position:static;z-index:auto;background:rgba(255,255,255,0.95);padding:8px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
     #status{font-size:12px;margin-bottom:4px}
     button{margin-right:4px}
     /* Mobile Panel Anpassungen */
     @media (max-width: 600px) {
       #controls {
-        width: 95vw !important;
-        min-width: unset !important;
-        max-width: 98vw !important;
-        left: 2vw !important;
-        right: 2vw !important;
+        width: auto !important;
+        min-width: 40vw !important;
+        max-width: 96vw !important;
         box-sizing: border-box;
         font-size: 1.08em;
         padding: 4vw 3vw;
-        top: 2vw !important;
         border-radius: 4vw;
         max-height: 80vh;
         overflow-y: auto;
@@ -57,15 +54,23 @@
   </style>
 </head>
 <body>
-  <div id="controls" class="modern-panel top-panel">
-      <div style="display:flex;align-items:center;gap:0.5em;flex-wrap:wrap;justify-content:center;">
-        <!-- status moved to message box -->
-        <div id="status" style="display:none">Not registered</div>
+  <div id="topBar" class="top-bar">
+    <div id="controls" class="modern-panel top-panel">
+        <div style="display:flex;align-items:center;gap:0.5em;flex-wrap:wrap;justify-content:center;">
+          <!-- status moved to message box -->
+          <div id="status" style="display:none">Not registered</div>
+        </div>
+        <!-- wakelock and token info moved to messageBox -->
+        <div style="margin-top:6px">Polling: <span id="pollingInterval">5s</span></div>
       </div>
-      <!-- wakelock and token info moved to messageBox -->
-      <div style="margin-top:6px">Polling: <span id="pollingInterval">5s</span></div>
-    </div>
+    <!-- messageBox moved out of topBar; will be centered overlay -->
+  </div>
   <div id="map"></div>
+  <div id="messageBox" class="message-box modern-panel" style="display:block">
+    <div id="msgStatus" class="msg-line">Not registered</div>
+    <div id="msgWake" class="msg-line"></div>
+    <div id="msgToken" class="msg-line"></div>
+  </div>
   <div id="bottomControls" class="bottom-controls">
     <button id="btnCenter" class="big-btn app-btn" title="Center" aria-label="Center">
       <!-- crosshair icon -->
@@ -104,11 +109,6 @@
       <!-- display icon -->
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2" fill="#fff"/><path d="M8 20h8" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/></svg>
     </button>
-  </div>
-  <div id="messageBox" class="message-box modern-panel" style="display:block">
-    <div id="msgStatus" class="msg-line">Not registered</div>
-    <div id="msgWake" class="msg-line"></div>
-    <div id="msgToken" class="msg-line"></div>
   </div>
   <!-- Leaflet layer control will appear top-right by default -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
