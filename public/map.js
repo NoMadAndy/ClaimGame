@@ -106,6 +106,7 @@ function collectLootSpot(loot, dist) {
         currentPlayer = data.player;
         localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
         updateUserMenuUI();
+        updateStatus();
       }
       displayLootSpots();
       showMessage(`🎉 Loot gesammelt! +${gainedXP} XP${loot.itemReward ? ' + '+loot.itemReward.name : ''}`, 3000);
@@ -143,6 +144,7 @@ function updateLocalLootStats(loot, gainedXP) {
     
     localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
     updateUserMenuUI();
+    updateStatus();
   }
   
   displayLootSpots();
@@ -573,8 +575,22 @@ function updateStatus() {
   const el = document.getElementById('msgStatus');
   if (!currentPlayer) {
     if (el) el.innerText = 'Not registered';
+    document.getElementById('msgStats').style.display = 'none';
   } else {
     if (el) el.innerText = `Player: ${currentPlayer.displayName} (${currentPlayer.id}) role:${currentPlayer.role}`;
+    
+    // Update stats display
+    if (currentPlayer.stats) {
+      const statsEl = document.getElementById('msgStats');
+      if (statsEl) {
+        statsEl.style.display = 'block';
+        document.getElementById('playerLevel').innerText = currentPlayer.stats.level || 1;
+        document.getElementById('playerXP').innerText = currentPlayer.stats.totalXP || 0;
+        const nextLevelXP = (currentPlayer.stats.level || 1) * 100;
+        document.getElementById('playerXPNext').innerText = nextLevelXP;
+        document.getElementById('lootCount').innerText = currentPlayer.stats.collectedLootSpotsCount || 0;
+      }
+    }
   }
   const ubtn = document.getElementById('userMenuBtn');
     if (ubtn) { 
@@ -740,6 +756,41 @@ async function getPositionAndLoad() {
       displayLootSpots();
     }
   });
+  
+  // Watch position for continuous updates
+  navigator.geolocation.watchPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const currentPos = { lat, lng: lon };
+      
+      // Update player marker
+      setPlayerPosition({ latitude: lat, longitude: lon });
+      
+      // Update map view to follow player
+      map.setView([lat, lon], map.getZoom());
+      
+      // Try to collect nearby loot spots
+      tryCollectNearbyLootSpots(currentPos);
+      
+      // Try auto-logs for nearby permanent spots
+      tryAutoLogNearbySpots(currentPos);
+      
+      // Emit socket event for other players to see this player moving
+      if (window.CG && window.CG.socket && currentPlayer) {
+        window.CG.socket.emit('positionUpdate', { 
+          playerId: currentPlayer.id, 
+          position: { latitude: lat, longitude: lon } 
+        });
+      }
+    },
+    (err) => { console.warn('watchPosition error', err); },
+    { 
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
 }
 
 async function loadSpots(lat = 52.52, lon = 13.405) {
