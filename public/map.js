@@ -524,7 +524,7 @@ function attachPopupButtons(popup) {
   const btnManual = el.querySelector('.btnManual');
   if (btnManual) btnManual.addEventListener('click', async (ev) => {
     if (!currentPlayer) return alert('Register first');
-    const id = ev.target.getAttribute('data-id');
+    const id = ev.currentTarget.getAttribute('data-id');
     const distance = parseFloat(prompt('Approx distance in meters?', '5'));
     const note = prompt('Note?');
     const ok = await ensureAuth();
@@ -538,7 +538,7 @@ function attachPopupButtons(popup) {
   const btnAuto = el.querySelector('.btnAuto');
   if (btnAuto) btnAuto.addEventListener('click', async (ev)=>{
     if (!currentPlayer) return alert('Register first');
-    const id = ev.target.getAttribute('data-id');
+    const id = ev.currentTarget.getAttribute('data-id');
     const distance = parseFloat(prompt('Approx distance in meters?', '5'));
     const ok2 = await ensureAuth();
     if (!ok2) return alert('You must be logged in');
