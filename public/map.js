@@ -603,6 +603,15 @@ async function getPositionAndLoad() {
   if (!navigator.geolocation) {
     alert('Geolocation not available');
     loadSpots();
+    // Generate loot spots at map center as fallback
+    if (!lootSpotsGenerated) {
+      const center = map.getCenter();
+      const currentPos = { lat: center.lat, lng: center.lng };
+      console.log('GPS not available, generating loot spots at map center:', currentPos);
+      localLootSpots = generateLocalLootSpotsAround(currentPos);
+      lootSpotsGenerated = true;
+      displayLootSpots();
+    }
     return;
   }
   navigator.geolocation.getCurrentPosition((pos)=>{
@@ -623,7 +632,19 @@ async function getPositionAndLoad() {
     
     // Try to collect nearby loot
     tryCollectNearbyLootSpots(currentPos);
-  }, (err)=>{ console.warn('geo err', err); loadSpots(); });
+  }, (err)=>{ 
+    console.warn('geo err', err); 
+    loadSpots();
+    // Generate loot spots at map center when GPS denied
+    if (!lootSpotsGenerated) {
+      const center = map.getCenter();
+      const currentPos = { lat: center.lat, lng: center.lng };
+      console.log('GPS denied, generating loot spots at map center:', currentPos);
+      localLootSpots = generateLocalLootSpotsAround(currentPos);
+      lootSpotsGenerated = true;
+      displayLootSpots();
+    }
+  });
 }
 
 async function loadSpots(lat = 52.52, lon = 13.405) {
@@ -689,7 +710,13 @@ async function loadHeatmap() {
   const res = await fetch(`${baseUrl}/heatmap/${currentPlayer.id}`, { headers: getAuthHeaders() }).then(r=>r.json());
   if (!Array.isArray(res)) return;
   const points = res.map(s => [s.position.latitude, s.position.longitude, Math.max(0.1, Math.min(1, s.playerClaimShare))]);
-  heatLayer.setLatLngs(points.map(p=>[p[0], p[1], p[2]*0.8]));
+  try {
+    if (map && map.hasLayer(heatLayer)) {
+      heatLayer.setLatLngs(points.map(p=>[p[0], p[1], p[2]*0.8]));
+    }
+  } catch (e) {
+    console.warn('heatmap render error', e);
+  }
 }
 
 function toggleHeatmap() {
