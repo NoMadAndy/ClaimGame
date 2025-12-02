@@ -14,6 +14,126 @@ let localLootSpots = [];
 let lootSpotsGenerated = false;
 const LOOT_COLLECTION_RADIUS = 25; // meters
 
+// --- Local Loot Spots (Phase 1) - Global functions ---
+function generateLocalLootSpotsAround(center) {
+  const spots = [];
+  const count = 5 + Math.floor(Math.random() * 6); // 5-10 spots
+  console.log(`Generating ${count} loot spots around`, center);
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * 2 * Math.PI;
+    const radius = 50 + Math.random() * 100; // 50-150m
+    const pos = moveCoordinate(center, angle, radius);
+    const xp = 10;
+    const itemReward = Math.random() > 0.7 ? { name: ['Kompass', 'Karte', 'Boost'][Math.floor(Math.random()*3)], quantity: 1 } : null;
+    spots.push({
+      id: 'loot-' + Date.now() + '-' + i,
+      position: pos,
+      xpReward: xp,
+      itemReward: itemReward,
+      isCollected: false,
+      createdAt: Date.now()
+    });
+  }
+  console.log('Generated loot spots:', spots);
+  return spots;
+}
+
+function moveCoordinate(center, angleRad, distanceMeters) {
+  const R = 6371000; // earth radius in meters
+  const lat1 = center.lat * Math.PI / 180;
+  const lon1 = center.lng * Math.PI / 180;
+  const dR = distanceMeters / R;
+  const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dR) + Math.cos(lat1)*Math.sin(dR)*Math.cos(angleRad));
+  const lon2 = lon1 + Math.atan2(Math.sin(angleRad)*Math.sin(dR)*Math.cos(lat1), Math.cos(dR)-Math.sin(lat1)*Math.sin(lat2));
+  return { lat: lat2 * 180 / Math.PI, lng: lon2 * 180 / Math.PI };
+}
+
+function displayLootSpots() {
+  console.log('Displaying loot spots:', localLootSpots.length, 'total');
+  lootSpotsLayer.clearLayers();
+  localLootSpots.forEach(loot => {
+    if (loot.isCollected) return;
+    console.log('Adding loot marker at', loot.position);
+    const marker = L.marker([loot.position.lat, loot.position.lng], {
+      icon: L.divIcon({
+        className: 'loot-spot-icon',
+        html: '<svg viewBox="0 0 24 24" width="32" height="32"><polygon points="12,2 15,9 22,10 17,15 18,22 12,18 6,22 7,15 2,10 9,9" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/></svg>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      })
+    });
+    marker.bindPopup(`<b>Loot Spot</b><br>XP: ${loot.xpReward}${loot.itemReward ? '<br>Item: '+loot.itemReward.name : ''}`);
+    lootSpotsLayer.addLayer(marker);
+  });
+  console.log('Loot layer now has', lootSpotsLayer.getLayers().length, 'markers');
+}
+
+function tryCollectNearbyLootSpots(currentPos) {
+  if (!currentPos) return;
+  localLootSpots.forEach(loot => {
+    if (loot.isCollected) return;
+    const dist = distanceBetween(currentPos, loot.position);
+    if (dist <= LOOT_COLLECTION_RADIUS) {
+      collectLootSpot(loot, dist);
+    }
+  });
+}
+
+function collectLootSpot(loot, dist) {
+  loot.isCollected = true;
+  loot.collectedAt = Date.now();
+  const gainedXP = loot.xpReward;
+  
+  if (currentPlayer) {
+    // Update local player stats
+    if (!currentPlayer.stats) currentPlayer.stats = { totalXP: 0, collectedLootSpotsCount: 0, level: 1, xpToNextLevel: 100 };
+    currentPlayer.stats.totalXP += gainedXP;
+    currentPlayer.stats.collectedLootSpotsCount = (currentPlayer.stats.collectedLootSpotsCount || 0) + 1;
+    // Recalc level
+    const level = 1 + Math.floor(currentPlayer.stats.totalXP / 100);
+    const nextThreshold = level * 100;
+    currentPlayer.stats.level = level;
+    currentPlayer.stats.xpToNextLevel = Math.max(0, nextThreshold - currentPlayer.stats.totalXP);
+    
+    if (loot.itemReward) {
+      if (!currentPlayer.inventory) currentPlayer.inventory = { items: {} };
+      const itemId = loot.itemReward.name;
+      if (!currentPlayer.inventory.items[itemId]) {
+        currentPlayer.inventory.items[itemId] = { name: loot.itemReward.name, quantity: 0 };
+      }
+      currentPlayer.inventory.items[itemId].quantity += loot.itemReward.quantity;
+    }
+    
+    localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
+    updateUserMenuUI();
+  }
+  
+  displayLootSpots();
+  showMessage(`🎉 Loot gesammelt! +${gainedXP} XP${loot.itemReward ? ' + '+loot.itemReward.name : ''}`, 3000);
+}
+
+function distanceBetween(pos1, pos2) {
+  const R = 6371000;
+  const lat1 = pos1.lat * Math.PI / 180;
+  const lat2 = pos2.lat * Math.PI / 180;
+  const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+  const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
+  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function showMessage(html, duration = 2000) {
+  const box = document.getElementById('messageBox');
+  if (box) {
+    const line = document.createElement('div');
+    line.className = 'msg-line';
+    line.innerHTML = html;
+    box.appendChild(line);
+    setTimeout(() => line.remove(), duration);
+  }
+}
+
 function init() {
   // --- base layers for selection ---
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' });
@@ -124,126 +244,6 @@ function init() {
   setTimeout(()=>{ updateWakeLockButton(); }, 200);
   // Adjust compass button initial look
   updateCompassButton();
-
-  // --- Local Loot Spots (Phase 1) ---
-  function generateLocalLootSpotsAround(center) {
-    const spots = [];
-    const count = 5 + Math.floor(Math.random() * 6); // 5-10 spots
-    console.log(`Generating ${count} loot spots around`, center);
-    for (let i = 0; i < count; i++) {
-      const angle = Math.random() * 2 * Math.PI;
-      const radius = 50 + Math.random() * 100; // 50-150m
-      const pos = moveCoordinate(center, angle, radius);
-      const xp = 10;
-      const itemReward = Math.random() > 0.7 ? { name: ['Kompass', 'Karte', 'Boost'][Math.floor(Math.random()*3)], quantity: 1 } : null;
-      spots.push({
-        id: 'loot-' + Date.now() + '-' + i,
-        position: pos,
-        xpReward: xp,
-        itemReward: itemReward,
-        isCollected: false,
-        createdAt: Date.now()
-      });
-    }
-    console.log('Generated loot spots:', spots);
-    return spots;
-  }
-
-  function moveCoordinate(center, angleRad, distanceMeters) {
-    const R = 6371000; // earth radius in meters
-    const lat1 = center.lat * Math.PI / 180;
-    const lon1 = center.lng * Math.PI / 180;
-    const dR = distanceMeters / R;
-    const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dR) + Math.cos(lat1)*Math.sin(dR)*Math.cos(angleRad));
-    const lon2 = lon1 + Math.atan2(Math.sin(angleRad)*Math.sin(dR)*Math.cos(lat1), Math.cos(dR)-Math.sin(lat1)*Math.sin(lat2));
-    return { lat: lat2 * 180 / Math.PI, lng: lon2 * 180 / Math.PI };
-  }
-
-  function displayLootSpots() {
-    console.log('Displaying loot spots:', localLootSpots.length, 'total');
-    lootSpotsLayer.clearLayers();
-    localLootSpots.forEach(loot => {
-      if (loot.isCollected) return;
-      console.log('Adding loot marker at', loot.position);
-      const marker = L.marker([loot.position.lat, loot.position.lng], {
-        icon: L.divIcon({
-          className: 'loot-spot-icon',
-          html: '<svg viewBox="0 0 24 24" width="32" height="32"><polygon points="12,2 15,9 22,10 17,15 18,22 12,18 6,22 7,15 2,10 9,9" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5"/></svg>',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
-        })
-      });
-      marker.bindPopup(`<b>Loot Spot</b><br>XP: ${loot.xpReward}${loot.itemReward ? '<br>Item: '+loot.itemReward.name : ''}`);
-      lootSpotsLayer.addLayer(marker);
-    });
-    console.log('Loot layer now has', lootSpotsLayer.getLayers().length, 'markers');
-  }
-
-  function tryCollectNearbyLootSpots(currentPos) {
-    if (!currentPos) return;
-    localLootSpots.forEach(loot => {
-      if (loot.isCollected) return;
-      const dist = distanceBetween(currentPos, loot.position);
-      if (dist <= LOOT_COLLECTION_RADIUS) {
-        collectLootSpot(loot, dist);
-      }
-    });
-  }
-
-  function collectLootSpot(loot, dist) {
-    loot.isCollected = true;
-    loot.collectedAt = Date.now();
-    const gainedXP = loot.xpReward;
-    
-    if (currentPlayer) {
-      // Update local player stats
-      if (!currentPlayer.stats) currentPlayer.stats = { totalXP: 0, collectedLootSpotsCount: 0, level: 1, xpToNextLevel: 100 };
-      currentPlayer.stats.totalXP += gainedXP;
-      currentPlayer.stats.collectedLootSpotsCount = (currentPlayer.stats.collectedLootSpotsCount || 0) + 1;
-      // Recalc level
-      const level = 1 + Math.floor(currentPlayer.stats.totalXP / 100);
-      const nextThreshold = level * 100;
-      currentPlayer.stats.level = level;
-      currentPlayer.stats.xpToNextLevel = Math.max(0, nextThreshold - currentPlayer.stats.totalXP);
-      
-      if (loot.itemReward) {
-        if (!currentPlayer.inventory) currentPlayer.inventory = { items: {} };
-        const itemId = loot.itemReward.name;
-        if (!currentPlayer.inventory.items[itemId]) {
-          currentPlayer.inventory.items[itemId] = { name: loot.itemReward.name, quantity: 0 };
-        }
-        currentPlayer.inventory.items[itemId].quantity += loot.itemReward.quantity;
-      }
-      
-      localStorage.setItem('cg_player', JSON.stringify(currentPlayer));
-      updateUserMenuUI();
-    }
-    
-    displayLootSpots();
-    showMessage(`🎉 Loot gesammelt! +${gainedXP} XP${loot.itemReward ? ' + '+loot.itemReward.name : ''}<br>Entfernung: ${dist.toFixed(1)}m`, 3000);
-  }
-
-  function distanceBetween(pos1, pos2) {
-    const R = 6371000;
-    const lat1 = pos1.lat * Math.PI / 180;
-    const lat2 = pos2.lat * Math.PI / 180;
-    const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
-    const dLon = (pos2.lng - pos1.lng) * Math.PI / 180;
-    const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  function showMessage(html, duration = 2000) {
-    const box = document.getElementById('messageBox');
-    if (box) {
-      const line = document.createElement('div');
-      line.className = 'msg-line';
-      line.innerHTML = html;
-      box.appendChild(line);
-      setTimeout(() => line.remove(), duration);
-    }
-  }
 
   if (currentPlayer) updateStatus();
   updateUserMenuUI();
