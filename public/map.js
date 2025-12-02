@@ -36,7 +36,7 @@ function init() {
   // layers button toggles the builtin control open/close if possible
   // The layer control is shown in the top-right by default; no bottom toggle needed.
 
-  // user menu: toggle dropdown
+  // user menu: opens on hover via CSS, no JS click handler needed
   const userMenuBtn = document.getElementById('userMenuBtn');
   const userMenu = document.getElementById('userMenu');
   if (userMenuBtn && userMenu) {
@@ -45,21 +45,7 @@ function init() {
       userMenuBtn.setAttribute('title', currentPlayer ? `${currentPlayer.displayName || 'User'}` : 'Guest');
       userMenuBtn.setAttribute('aria-label', currentPlayer ? `${currentPlayer.displayName || 'User'}` : 'Guest');
     }
-    userMenuBtn.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      const show = userMenu.classList.contains('show');
-      if (show) {
-        userMenu.classList.remove('show');
-        userMenu.setAttribute('aria-hidden','true');
-        userMenu.style.display = 'none';
-      } else {
-        userMenu.classList.add('show');
-        userMenu.setAttribute('aria-hidden','false');
-        userMenu.style.display = 'block';
-      }
-    });
-    // hide menu on outside click
-    document.addEventListener('click', ()=>{ if (userMenu) { userMenu.classList.remove('show'); userMenu.setAttribute('aria-hidden','true'); userMenu.style.display='none'; } });
+    // Hover is handled by CSS
   }
   // no custom layers toggle button anymore; use Leaflet's native control
 
@@ -125,7 +111,7 @@ function init() {
     const btn = document.getElementById('wakelockBtn');
     if (!btn) return;
     // Keep the icon intact, set aria-pressed and title instead
-    const isActive = !!window.CG?.wakeLockActive;
+    const isActive = wakeLockActive;
     btn.setAttribute('aria-pressed', String(isActive));
     btn.setAttribute('title', isActive ? 'Display bleibt an' : 'Display kann ausgehen');
     btn.classList.toggle('active', isActive);
