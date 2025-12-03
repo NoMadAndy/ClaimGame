@@ -23,6 +23,14 @@ let trackingEnabled = false;
 let activeRouteId = null;
 let routePoints = [];
 
+// --- Helpers ---
+function isMobileDevice() {
+  return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches;
+}
+function getStandardZoom() {
+  return isMobileDevice() ? 19 : 16;
+}
+
 // --- Local Loot Spots (Phase 1) - Global functions ---
 function generateLocalLootSpotsAround(center) {
   const spots = [];
@@ -268,7 +276,7 @@ function init() {
   const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   // initialize map with osm
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches;
+  const isMobile = isMobileDevice();
   const initialZoom = isMobile ? 19 : 15;
   map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], initialZoom);
   // (UI overlays are fixed positioned via CSS / JS, do not attach to map pane)
@@ -618,11 +626,21 @@ function setPlayerPosition(position) {
 }
 
 function centerToMe() {
-  // setzt Auto-Follow wieder aktiv und zentriert
+  // Auto-Follow wieder aktivieren und Standardzoom setzen
   autoFollow = true;
+  const stdZoom = getStandardZoom();
   if (playerMarker) {
     const ll = playerMarker.getLatLng();
-    map.setView([ll.lat, ll.lng], Math.max(map.getZoom(), 16));
+    map.setView([ll.lat, ll.lng], stdZoom, { animate: true, duration: 0.6 });
+  } else if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
+      map.setView([latitude, longitude], stdZoom, { animate: true, duration: 0.6 });
+      setPlayerPosition({ latitude, longitude });
+    });
+  } else {
+    const c = map.getCenter();
+    map.setView([c.lat, c.lng], stdZoom, { animate: true, duration: 0.6 });
   }
 }
 
@@ -843,7 +861,7 @@ async function getPositionAndLoad() {
   navigator.geolocation.getCurrentPosition((pos)=>{
     const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     console.log('GPS fix received:', currentPos);
-    const targetZoom = ( /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches ) ? 19 : 16;
+    const targetZoom = getStandardZoom();
     map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(map.getZoom(), targetZoom));
     loadSpots(pos.coords.latitude, pos.coords.longitude);
     // update player marker to current GPS position immediately
@@ -886,9 +904,9 @@ async function getPositionAndLoad() {
       // Update player marker
       setPlayerPosition({ latitude: lat, longitude: lon });
       
-      // Update map view to follow player only wenn autoFollow aktiv ist
+      // Map sanft folgen lassen, solange Auto-Follow aktiv ist
       if (autoFollow) {
-        map.setView([lat, lon], map.getZoom());
+        map.panTo([lat, lon], { animate: true, duration: 0.6, easeLinearity: 0.25 });
       }
       
       // Record route point if tracking is enabled
@@ -1026,20 +1044,7 @@ async function loadLivePlayers(lat = null, lon = null, radius = 2000) {
   }
 }
 
-async function centerToMe() {
-  if (!navigator.geolocation) return alert('Geolocation not available');
-  navigator.geolocation.getCurrentPosition((pos)=>{ 
-    const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    const targetZoom = ( /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches ) ? 19 : 16;
-    map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(map.getZoom(), targetZoom)); 
-    loadSpots(pos.coords.latitude, pos.coords.longitude); 
-    setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
-    loadLivePlayers(pos.coords.latitude, pos.coords.longitude);
-    tryCollectNearbyLootSpots(currentPos);
-    tryAutoLogNearbySpots(currentPos);
-    if (window.CG && window.CG.socket && currentPlayer) { window.CG.socket.emit('positionUpdate', { playerId: currentPlayer.id, position: { latitude: pos.coords.latitude, longitude: pos.coords.longitude } }); }
-  });
-}
+// centerToMe unified above
 
 // --- Route Tracking Functions ---
 async function startTracking() {
