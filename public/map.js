@@ -26,6 +26,9 @@ const FOLLOW_PAN_LONG = { duration: 0.8, easeLinearity: 0.3 };
 let trackingEnabled = false;
 let activeRouteId = null;
 let routePoints = [];
+let showLiveRoute = true;
+let oldRoutesList = [];
+let selectedOldRouteId = null;
 
 // --- Helpers ---
 function isMobileDevice() {
@@ -455,8 +458,41 @@ function init() {
 
   // add baseLayers + overlays to control
   const baseLayers = { 'OpenStreetMap': osm, 'Topo': topo, 'Stamen Toner': stamenToner, 'Stamen Watercolor': stamenWater, 'Esri Satellite': esriSat, 'Carto Positron': cartoPositron, 'Carto Dark': cartoDark, 'Carto Voyager': cartoVoyager };
-  const overlays = { 'Spots': spotsLayer, 'Loot Spots': lootSpotsLayer, 'Live Players': livePlayersLayer, 'Heatmap': heatLayer, 'Route': routeLayer };
+  // Custom overlays for route selection
+  const overlays = {
+    'Spots': spotsLayer,
+    'Loot Spots': lootSpotsLayer,
+    'Live Players': livePlayersLayer,
+    'Heatmap': heatLayer,
+    'Live-Route': routeLayer,
+    'Alter Track': L.layerGroup() // Platzhalter, wird dynamisch befüllt
+  };
   const layerControl = L.control.layers(baseLayers, overlays, { position: 'topright', collapsed: true }).addTo(map);
+
+  // Layer-Event: Umschalten zwischen Live-Route und Alter Track
+  map.on('overlayadd', function(e) {
+    if (e.name === 'Live-Route') {
+      showLiveRoute = true;
+      selectedOldRouteId = null;
+      updateRouteDisplay();
+    }
+    if (e.name === 'Alter Track') {
+      showLiveRoute = false;
+      // Lade alle alten Routen des Spielers
+      if (!currentPlayer || !currentPlayer.id) return showMessage('Kein Spieler angemeldet', 1500);
+      fetch(`${baseUrl}/tracking/${currentPlayer.id}/routes`).then(r => r.json()).then(res => {
+        oldRoutesList = res.routes || [];
+        if (oldRoutesList.length === 0) return showMessage('Keine alten Tracks gefunden', 1500);
+        // Zeige Auswahl (prompt)
+        const options = oldRoutesList.map((r, i) => `${i+1}: ${new Date(r.startedAt).toLocaleString()} (${r.points.length} Punkte)`).join('\n');
+        const idx = parseInt(prompt(`Wähle Track:\n${options}`), 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= oldRoutesList.length) return showMessage('Abbruch', 1000);
+        selectedOldRouteId = oldRoutesList[idx].id;
+        updateRouteDisplay();
+        showMessage('Alter Track angezeigt', 1200);
+      });
+    }
+  });
   // Style the control container
   try {
     const ctrl = document.querySelector('.leaflet-control-layers');
@@ -1137,18 +1173,33 @@ function recordRoutePoint(lat, lng) {
 
 function updateRouteDisplay() {
   routeLayer.clearLayers();
-  
-  if (routePoints.length < 2) return;
-  
-  const latLngs = routePoints.map(p => [p.lat, p.lng]);
-  const polyline = L.polyline(latLngs, {
-    color: '#4f8cff',
-    weight: 4,
-    opacity: 0.7,
-    smoothFactor: 1
-  });
-  
-  routeLayer.addLayer(polyline);
+  if (showLiveRoute) {
+    if (routePoints.length < 2) return;
+    const latLngs = routePoints.map(p => [p.lat, p.lng]);
+    const polyline = L.polyline(latLngs, {
+      color: '#4f8cff',
+      weight: 4,
+      opacity: 0.7,
+      smoothFactor: 1
+    });
+    routeLayer.addLayer(polyline);
+  } else if (selectedOldRouteId) {
+    // Lade und zeige die gewählte alte Route
+    fetch(`${baseUrl}/tracking/route/${selectedOldRouteId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.route || !data.route.points || data.route.points.length < 2) return;
+        const latLngs = data.route.points.map(p => [p.position.latitude, p.position.longitude]);
+        const polyline = L.polyline(latLngs, {
+          color: '#10b981',
+          weight: 4,
+          opacity: 0.7,
+          dashArray: '8 6',
+          smoothFactor: 1
+        });
+        routeLayer.addLayer(polyline);
+      });
+  }
 }
 
 async function pollAll() {
@@ -1160,6 +1211,28 @@ async function pollAll() {
   } catch (e) { console.error('poll error', e); }
 }
 
+document.getElementById('btnShowLiveRoute').addEventListener('click', () => {
+  showLiveRoute = true;
+  selectedOldRouteId = null;
+  updateRouteDisplay();
+  showMessage('Live-Route angezeigt', 1200);
+});
+document.getElementById('btnShowOldTracks').addEventListener('click', async () => {
+  showLiveRoute = false;
+  selectedOldRouteId = null;
+  // Lade alle alten Routen des Spielers
+  if (!currentPlayer || !currentPlayer.id) return showMessage('Kein Spieler angemeldet', 1500);
+  const res = await fetch(`${baseUrl}/tracking/${currentPlayer.id}/routes`).then(r => r.json());
+  oldRoutesList = res.routes || [];
+  if (oldRoutesList.length === 0) return showMessage('Keine alten Tracks gefunden', 1500);
+  // Zeige Auswahl (prompt)
+  const options = oldRoutesList.map((r, i) => `${i+1}: ${new Date(r.startedAt).toLocaleString()} (${r.points.length} Punkte)`).join('\n');
+  const idx = parseInt(prompt(`Wähle Track:\n${options}`), 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= oldRoutesList.length) return showMessage('Abbruch', 1000);
+  selectedOldRouteId = oldRoutesList[idx].id;
+  updateRouteDisplay();
+  showMessage('Alter Track angezeigt', 1200);
+});
 init();
 
 // Expose helper for developer console

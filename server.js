@@ -430,6 +430,20 @@ app.post('/tracking/start', (req, res) => {
   res.json({ route });
 });
 
+// List all finished routes for a player
+app.get('/tracking/:playerId/routes', (req, res) => {
+  const playerId = req.params.playerId;
+  const routes = Object.values(store.routes).filter(r => r.playerId === playerId && r.endedAt);
+  res.json({ routes });
+});
+
+// Get a single route by id
+app.get('/tracking/route/:id', (req, res) => {
+  const route = store.routes[req.params.id];
+  if (!route) return res.status(404).json({ error: 'Route not found' });
+  res.json({ route });
+});
+
 app.post('/tracking/:id/point', (req, res) => {
   const routeId = req.params.id;
   const route = store.routes[routeId];
