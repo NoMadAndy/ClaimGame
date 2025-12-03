@@ -17,6 +17,10 @@ const LOOT_COLLECTION_RADIUS = 25; // meters
 const AUTO_LOG_RADIUS = 10; // meters for auto-logs
 const AUTO_LOG_COOLDOWN = 5 * 60 * 1000; // 5 minutes
 let autoLogCooldowns = {}; // { spotId: timestamp }
+// Smooth follow tuning
+const FLY_THRESHOLD_METERS = 400; // ab dieser Distanz weicher Flug statt Pan
+const FOLLOW_PAN_SHORT = { duration: 0.45, easeLinearity: 0.22 };
+const FOLLOW_PAN_LONG = { duration: 0.8, easeLinearity: 0.3 };
 
 // Route tracking
 let trackingEnabled = false;
@@ -904,9 +908,18 @@ async function getPositionAndLoad() {
       // Update player marker
       setPlayerPosition({ latitude: lat, longitude: lon });
       
-      // Map sanft folgen lassen, solange Auto-Follow aktiv ist
+      // Map sanft folgen lassen, solange Auto-Follow aktiv ist (adaptiv pan/fly)
       if (autoFollow) {
-        map.panTo([lat, lon], { animate: true, duration: 0.6, easeLinearity: 0.25 });
+        const c = map.getCenter();
+        const dist = distanceBetween({ lat: c.lat, lng: c.lng }, { lat, lng: lon });
+        if (dist > FLY_THRESHOLD_METERS) {
+          // weiter Sprung: sanfter Flug, ggf. auf Standardzoom anheben
+          const z = Math.max(map.getZoom(), getStandardZoom());
+          map.flyTo([lat, lon], z, { animate: true, duration: FOLLOW_PAN_LONG.duration, easeLinearity: FOLLOW_PAN_LONG.easeLinearity });
+        } else {
+          // kurzer Schritt: sanftes Pan ohne Zoomänderung
+          map.panTo([lat, lon], { animate: true, duration: FOLLOW_PAN_SHORT.duration, easeLinearity: FOLLOW_PAN_SHORT.easeLinearity });
+        }
       }
       
       // Record route point if tracking is enabled
