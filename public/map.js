@@ -1211,28 +1211,7 @@ async function pollAll() {
   } catch (e) { console.error('poll error', e); }
 }
 
-document.getElementById('btnShowLiveRoute').addEventListener('click', () => {
-  showLiveRoute = true;
-  selectedOldRouteId = null;
-  updateRouteDisplay();
-  showMessage('Live-Route angezeigt', 1200);
-});
-document.getElementById('btnShowOldTracks').addEventListener('click', async () => {
-  showLiveRoute = false;
-  selectedOldRouteId = null;
-  // Lade alle alten Routen des Spielers
-  if (!currentPlayer || !currentPlayer.id) return showMessage('Kein Spieler angemeldet', 1500);
-  const res = await fetch(`${baseUrl}/tracking/${currentPlayer.id}/routes`).then(r => r.json());
-  oldRoutesList = res.routes || [];
-  if (oldRoutesList.length === 0) return showMessage('Keine alten Tracks gefunden', 1500);
-  // Zeige Auswahl (prompt)
-  const options = oldRoutesList.map((r, i) => `${i+1}: ${new Date(r.startedAt).toLocaleString()} (${r.points.length} Punkte)`).join('\n');
-  const idx = parseInt(prompt(`Wähle Track:\n${options}`), 10) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= oldRoutesList.length) return showMessage('Abbruch', 1000);
-  selectedOldRouteId = oldRoutesList[idx].id;
-  updateRouteDisplay();
-  showMessage('Alter Track angezeigt', 1200);
-});
+// Buttons für Live-Route und Alte Tracks wurden entfernt; Event-Listener ebenfalls entfernt.
 init();
 
 // Expose helper for developer console
