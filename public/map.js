@@ -268,7 +268,9 @@ function init() {
   const cartoDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   const cartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19, attribution: '© Carto' });
   // initialize map with osm
-  map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], 14);
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches;
+  const initialZoom = isMobile ? 19 : 15;
+  map = L.map('map', { layers: [osm] }).setView([52.52, 13.405], initialZoom);
   // (UI overlays are fixed positioned via CSS / JS, do not attach to map pane)
   // Statusleiste NICHT in das UI-Pane verschieben; bleibt als fixed Overlay im Body
   spotsLayer = L.layerGroup().addTo(map);
@@ -841,7 +843,8 @@ async function getPositionAndLoad() {
   navigator.geolocation.getCurrentPosition((pos)=>{
     const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
     console.log('GPS fix received:', currentPos);
-    map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+    const targetZoom = ( /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches ) ? 19 : 16;
+    map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(map.getZoom(), targetZoom));
     loadSpots(pos.coords.latitude, pos.coords.longitude);
     // update player marker to current GPS position immediately
     setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
@@ -1027,7 +1030,8 @@ async function centerToMe() {
   if (!navigator.geolocation) return alert('Geolocation not available');
   navigator.geolocation.getCurrentPosition((pos)=>{ 
     const currentPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    map.setView([pos.coords.latitude, pos.coords.longitude], 16); 
+    const targetZoom = ( /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.matchMedia('(max-width: 600px)').matches ) ? 19 : 16;
+    map.setView([pos.coords.latitude, pos.coords.longitude], Math.max(map.getZoom(), targetZoom)); 
     loadSpots(pos.coords.latitude, pos.coords.longitude); 
     setPlayerPosition({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
     loadLivePlayers(pos.coords.latitude, pos.coords.longitude);
